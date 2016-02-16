@@ -41,14 +41,27 @@ int main( void )
     // Init root bone and child bone
     Bone root;
     Bone child;
+    Bone child2;
+//    Bone child3;
     
-    // init skeleton and pass root bone to set root
+    // init skeleton and pass root bone to set root, root automatically added as bone
     Skeleton skeleton(root);
     
     // add child bone to skeleton
     skeleton.addBone(child);
+    skeleton.addBone(child2);
+//    skeleton.addBone(child3);
+    
+    // Associate child bones
     root.addChild(&child);
+    child.addChild(&child2);
+//    child2.addChild(&child3);
+    
+    // Associated parent bones
     child.addParent(&root);
+    child2.addParent(&child);
+//    child3.addParent(&child2);
+    
     skeleton.querySkeleton();
     
     initStuff();
@@ -114,23 +127,34 @@ int main( void )
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
 
-    // Init root model matrix
+    // Init root model matrix 1
     root.position = glm::vec3(0.0f, 0.0f, 0.0f);
     root.ModelMatrix = glm::translate(root.ModelMatrix, root.position);
     
     // Init model matrix 2
-    
     child.position = glm::vec3(0.0f, 0.0f, 1.0f);
     child.ModelMatrix = glm::translate(child.ModelMatrix, child.position);
+    
+    // Init model matrix 3
+    child2.position = glm::vec3(0.0f, 0.0f, 1.2f);
+    child2.ModelMatrix = glm::translate(child2.ModelMatrix, child2.position);
+    
+    // Init model matrix 4
+//    child3.position = glm::vec3(0.0f, 0.0f, 2.0f);
+//    child3.ModelMatrix = glm::translate(child3.ModelMatrix, child3.position);
     
     glm::mat4 ProjectionMatrix = getProjectionMatrix();
     glm::mat4 ViewMatrix = getViewMatrix();
     
-    child.MVP = ProjectionMatrix * ViewMatrix * child.ModelMatrix;
+//    child3.MVP = ProjectionMatrix * ViewMatrix * child3.ModelMatrix;
     
     // GAME LOOP /////
+    root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
+    child.MVP = ProjectionMatrix * ViewMatrix * child.ModelMatrix;
+    child2.MVP = ProjectionMatrix * ViewMatrix * child2.ModelMatrix;
     
     do{
+      root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
       ProjectionMatrix = getProjectionMatrix();
       ViewMatrix = getViewMatrix();
 		// Measure speed
@@ -150,7 +174,7 @@ int main( void )
 		// Compute the MVP matrix from keyboard and mouse input
 		computeMatricesFromInputs();
 		
-		////// Start of the rendering of the first object //////
+		////// Start of the rendering of the Light object //////
 		
 		// Use our shader
 		glUseProgram(programID);
@@ -159,13 +183,9 @@ int main( void )
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]); // This one doesn't change between objects, so this can be done once for all objects that use "programID"
 
-//		root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
-//        skeleton.drawSkeleton(root, ProjectionMatrix, ViewMatrix);
-        
 		// Send our transformation to the currently bound shader, 
 		// in the "MVP" uniform
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
+	
 
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
@@ -173,6 +193,10 @@ int main( void )
 		// Set our "myTextureSampler" sampler to user Texture Unit 0
 		glUniform1i(TextureID, 0);
 
+        // FIRST OBJECT
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
 
 		////// End of rendering of the first object //////
@@ -184,9 +208,24 @@ int main( void )
 		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &child.MVP[0][0]);
 		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &child.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-		
+
 		////// End of rendering of the second object //////
 
+        //THIRD OBJECT
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &child2.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &child2.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        ////// End of rendering of the third object //////
+        
+//        //FOURTH OBJECT
+//        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &child3.MVP[0][0]);
+//        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &child3.ModelMatrix[0][0]);
+//        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+//        
+//        ////// End of rendering of the fourth object //////
+        
+        
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);
@@ -198,21 +237,51 @@ int main( void )
         // Controls
         // Move Parent Cat Up and Down, update Child Cat relatively
         if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
-            root.updateRoot(-0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root.update(-0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+//            root.ModelMatrix = glm::rotate(root.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
+//            child.MVP = root.MVP*child.ModelMatrix;
+//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
-            root.updateRoot(0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root.update(0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            
+            // Rotate 'root' bone
+            // rotate children
+            
+//            root.ModelMatrix = glm::rotate(root.ModelMatrix, 0.1f, glm::vec3(1, 0, 0));
+//            child.MVP = root.MVP*child.ModelMatrix;
+//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_P ) == GLFW_PRESS){
-            child.updateRoot(-0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            child.update(-0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
 //            child.ModelMatrix = glm::rotate(child.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
 //            child.MVP = root.MVP*child.ModelMatrix;
+//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_L ) == GLFW_PRESS){
-            child.updateRoot(0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            child.update(0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
 //            child.ModelMatrix = glm::rotate(child.ModelMatrix, 0.1f, glm::vec3(1, 0, 0));
 //            child.MVP = root.MVP*child.ModelMatrix;
+//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
+        
+        if (glfwGetKey( window, GLFW_KEY_O ) == GLFW_PRESS){
+            child2.update(-0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+//            child2.MVP = child.MVP*child2.ModelMatrix;
+
+        }
+        if (glfwGetKey( window, GLFW_KEY_K ) == GLFW_PRESS){
+            child2.update(0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+//            child2.MVP = child.MVP*child2.ModelMatrix;
+
+        }
+//        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
+//            child3.updateRoot(-0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+//        }
+//        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
+//            child3.updateRoot(0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+//        }
+        
         
 
 	} // Check if the ESC key was pressed or the window was closed

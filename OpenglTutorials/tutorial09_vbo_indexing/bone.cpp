@@ -18,32 +18,39 @@ Bone::Bone()
     printf("Object is being created\n");
 }
 
-void Bone::updateRoot(float rotation, glm::mat4 ParentModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
+void Bone::update(float rotation, glm::mat4 ModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
     
     // Rotate bone's model matrix
-    this->ModelMatrix = glm::rotate(ParentModelMatrix, rotation, glm::vec3(1, 0, 0));
+    this->ModelMatrix = glm::rotate(ModelMatrix, rotation, glm::vec3(1, 0, 0));
     
     // Apply new model matrix to bone's mvp
-    this->MVP = ProjectionMatrix * ViewMatrix * this->ModelMatrix;
     
-    // if the bone has a child, update the child with the current bone's mvp
-    if(this->hasChild()) {
-        this->updateChild(this->MVP);
-    } else if (this->hasParent()) {
-//        child.MVP = root.MVP*child.ModelMatrix;
+    if(this->hasParent()) {
         this->MVP = this->parent->MVP * this->ModelMatrix;
     }
+    
+    //    this->MVP = ProjectionMatrix * ViewMatrix * this->ModelMatrix;
+    
+    //            child.ModelMatrix = glm::rotate(child.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
+    //            child.MVP = root.MVP*child.ModelMatrix; ******
+    //            child2.MVP = child.MVP*child2.ModelMatrix;
+    
+    // If the bone has a child, update the child with the current bone's mvp
+    if(this->hasChild()) {
+        this->updateChild(this->MVP);
+    }
+//    else if (this->hasParent()) {
+//        this->MVP = this->parent->MVP * this->ModelMatrix;
+//    }
 
 }
 
 void Bone::updateChild(glm::mat4 ParentMVP) {
     
-//    this->child->MVP = ParentMVP * this->ModelMatrix;
     this->child->MVP = ParentMVP * this->child->ModelMatrix;
-
     
     if(this->child->hasChild()) {
-        this->child->updateChild(this->ModelMatrix);
+        this->child->updateChild(this->child->MVP);
     }
 }
 
