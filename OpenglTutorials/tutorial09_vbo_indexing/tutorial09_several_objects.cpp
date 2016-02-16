@@ -48,6 +48,7 @@ int main( void )
     // add child bone to skeleton
     skeleton.addBone(child);
     root.addChild(&child);
+    child.addParent(&root);
     skeleton.querySkeleton();
     
     initStuff();
@@ -158,7 +159,7 @@ int main( void )
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]); // This one doesn't change between objects, so this can be done once for all objects that use "programID"
 
-		root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
+//		root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
 //        skeleton.drawSkeleton(root, ProjectionMatrix, ViewMatrix);
         
 		// Send our transformation to the currently bound shader, 
@@ -197,18 +198,19 @@ int main( void )
         // Controls
         // Move Parent Cat Up and Down, update Child Cat relatively
         if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
-            root.updateRoot(-0.1f, root.ModelMatrix);
+            root.updateRoot(-0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
         if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
-            root.updateRoot(0.1f, root.ModelMatrix);
+            root.updateRoot(0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
         if (glfwGetKey( window, GLFW_KEY_P ) == GLFW_PRESS){
-            child.updateRoot(-0.1f, child.ModelMatrix);
+            child.updateRoot(-0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
 //            child.ModelMatrix = glm::rotate(child.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
-            child.MVP = root.MVP*child.ModelMatrix;
+//            child.MVP = root.MVP*child.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_L ) == GLFW_PRESS){
-            child.ModelMatrix = glm::rotate(child.ModelMatrix, 0.1f, glm::vec3(1, 0, 0));
+            child.updateRoot(0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
+//            child.ModelMatrix = glm::rotate(child.ModelMatrix, 0.1f, glm::vec3(1, 0, 0));
 //            child.MVP = root.MVP*child.ModelMatrix;
         }
         

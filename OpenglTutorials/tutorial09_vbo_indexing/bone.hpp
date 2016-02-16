@@ -27,10 +27,13 @@ public:
     glm::mat4 ModelMatrix = glm::mat4(1.0);
     glm::mat4 MVP = glm::mat4(1.0);
     Bone* child;
+    Bone* parent;
     void addChild(Bone *bone);
-    void updateRoot(float rotation, glm::mat4 ParentModelMatrix);
-    void updateChild(glm::mat4 ParentModelMatrix);
+    void addParent(Bone *bone);
+    void updateRoot(float rotation, glm::mat4 ParentModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
+    void updateChild(glm::mat4 ParentMVP);
     bool hasChild();
+    bool hasParent();
     Bone();
 };
 
