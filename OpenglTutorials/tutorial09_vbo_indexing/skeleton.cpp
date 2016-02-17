@@ -38,16 +38,6 @@ void Skeleton::addBone(Bone &b) {
 
 }
 
-void Skeleton::drawSkeleton(Bone &b, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
-    
-//    b.MVP = ProjectionMatrix * ViewMatrix * b.ModelMatrix;
-    
-    for(int i=0; i<bones.size(); i++) {
-        bones[i].MVP = ProjectionMatrix * ViewMatrix * bones[i].ModelMatrix;
-    }
-    
-}
-
 void Skeleton::querySkeleton() {
     printf("Number of Bones in Skeleton = %i\n", num_bones);
     printf("Root bone id = %i\n", root.id);

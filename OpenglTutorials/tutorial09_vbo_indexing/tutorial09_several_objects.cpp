@@ -46,47 +46,83 @@ int main( void )
     Bone root;
     Bone child;
     Bone child2;
-    Bone child3;
     
-    // init skeleton and pass root bone to set root, root automatically added as bone
     Finger finger1(root);
     
-    // add child bone to skeleton
     finger1.addBone(child);
     finger1.addBone(child2);
-    finger1.addBone(child3);
     
-    // Associate child bones
     root.addChild(&child);
     child.addChild(&child2);
-    child2.addChild(&child3);
     
-    // Associated parent bones
     child.addParent(&root);
     child2.addParent(&child);
-    child3.addParent(&child2);
     
     // Finger 2
     Bone root2;
     Bone finger2Bone1;
     Bone finger2Bone2;
-    Bone finger2Bone3;
     
     Finger finger2(root2);
+    
     finger2.addBone(finger2Bone1);
     finger2.addBone(finger2Bone2);
-    finger2.addBone(finger2Bone3);
     
-    // Associations for finger 2
     root2.addChild(&finger2Bone1);
     finger2Bone1.addChild(&finger2Bone2);
-    finger2Bone2.addChild(&finger2Bone3);
     
-    // Associated parent bones
     finger2Bone1.addParent(&root2);
     finger2Bone2.addParent(&finger2Bone1);
-    finger2Bone3.addParent(&finger2Bone2);
     
+    // Finger 3
+    Bone root3;
+    Bone finger3Bone1;
+    Bone finger3Bone2;
+    
+    Finger finger3(root3);
+    
+    finger3.addBone(finger3Bone1);
+    finger3.addBone(finger3Bone2);
+    
+    root3.addChild(&finger3Bone1);
+    finger3Bone1.addChild(&finger3Bone2);
+    
+    finger3Bone1.addParent(&root3);
+    finger3Bone2.addParent(&finger3Bone1);
+    
+    // Finger 4
+    Bone root4;
+    Bone finger4Bone1;
+    Bone finger4Bone2;
+    
+    Finger finger4(root4);
+    
+    finger4.addBone(finger4Bone1);
+    finger4.addBone(finger4Bone2);
+    
+    root4.addChild(&finger4Bone1);
+    finger4Bone1.addChild(&finger4Bone2);
+    
+    finger4Bone1.addParent(&root4);
+    finger4Bone2.addParent(&finger4Bone1);
+    
+    // Finger 5
+    Bone root5;
+    Bone finger5Bone1;
+    Bone finger5Bone2;
+    
+    Finger finger5(root5);
+    
+    finger5.addBone(finger5Bone1);
+    finger5.addBone(finger5Bone2);
+    
+    root5.addChild(&finger5Bone1);
+    finger5Bone1.addChild(&finger5Bone2);
+    
+    finger5Bone1.addParent(&root5);
+    finger5Bone2.addParent(&finger5Bone1);
+    
+    finger5.queryFinger();
 //    skeleton.querySkeleton();
     initStuff();
 
@@ -112,7 +148,7 @@ int main( void )
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
-	bool catModel = loadOBJ("cat.obj", vertices, uvs, normals);
+	loadOBJ("cube.obj", vertices, uvs, normals);
 
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
@@ -150,12 +186,16 @@ int main( void )
     glm::mat4 ViewMatrix = getViewMatrix();
     
     initMVP(finger1, 0.0f, ProjectionMatrix, ViewMatrix);
-    initMVP(finger2, 0.3f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger2, 0.5f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger3, -0.5f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger4, 1.0f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger5, -1.0f, ProjectionMatrix, ViewMatrix);
     
-    // GAME LOOP /////
+    
+    // GAME LOOP /////r
     do{
-      ProjectionMatrix = getProjectionMatrix();
-      ViewMatrix = getViewMatrix();
+        ProjectionMatrix = getProjectionMatrix();
+        ViewMatrix = getViewMatrix();
 		// Measure speed
 		double currentTime = glfwGetTime();
 		nbFrames++;
@@ -183,6 +223,11 @@ int main( void )
 
 		// Send our transformation to the currently bound shader,
 		// in the "MVP" uniform
+        root.MVP  = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
+        root2.MVP = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
+        root3.MVP = ProjectionMatrix * ViewMatrix * root3.ModelMatrix;
+        root4.MVP = ProjectionMatrix * ViewMatrix * root4.ModelMatrix;
+        root5.MVP = ProjectionMatrix * ViewMatrix * root5.ModelMatrix;
         
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
@@ -191,6 +236,18 @@ int main( void )
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root2.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root2.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root3.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root3.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root4.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root4.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+    
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root5.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root5.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
 	
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
@@ -198,12 +255,12 @@ int main( void )
 		// Set our "myTextureSampler" sampler to user Texture Unit 0
 		glUniform1i(TextureID, 0);
         
-        root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
-        root2.MVP = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
-
-        // FIRST OBJECT
+        // Render Fingers
         render(finger1, ProjectionMatrix, ViewMatrix);
         render(finger2, ProjectionMatrix, ViewMatrix);
+        render(finger3, ProjectionMatrix, ViewMatrix);
+        render(finger4, ProjectionMatrix, ViewMatrix);
+        render(finger5, ProjectionMatrix, ViewMatrix);
         
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -233,17 +290,30 @@ int main( void )
         if (glfwGetKey( window, GLFW_KEY_K ) == GLFW_PRESS){
             child2.update(0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
-        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
-            child3.update(-0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
-        }
-        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
-            child3.update(0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
-        }
         if (glfwGetKey( window, GLFW_KEY_U ) == GLFW_PRESS){
             root2.update(-0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
         if (glfwGetKey( window, GLFW_KEY_H ) == GLFW_PRESS){
             root2.update(0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
+            root3.update(-0.1f, root3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
+            root3.update(0.1f, root3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_Y ) == GLFW_PRESS){
+            root4.update(-0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            cout << "NOW HERE" << endl;
+        }
+        if (glfwGetKey( window, GLFW_KEY_G ) == GLFW_PRESS){
+            root4.update(0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_T ) == GLFW_PRESS){
+            root5.update(-0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_F ) == GLFW_PRESS){
+            root5.update(0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
         
 
@@ -268,7 +338,7 @@ int main( void )
 }
 
 void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
-    for(int i = 1; i<finger.bones.size(); i++) {
+    for(int i = 0; i<finger.bones.size(); i++) {
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &finger.bones[i]->MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &finger.bones[i]->ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
@@ -276,12 +346,14 @@ void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
 }
 
 void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
-    float offSetZ = 0.0f;
+    float offSetZ = 2.0f;
     for (int i = 0; i<finger.bones.size(); i++) {
-        finger.bones[i]->position = glm::vec3(0.0f, offSetX, offSetZ);
+        if (i==0) {
+            finger.bones[i]->position = glm::vec3(offSetX, 0.0f, offSetZ);
+        }
+        finger.bones[i]->position = glm::vec3(0.0f, 0.0f, offSetZ);
         finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
         finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
-        offSetZ += 0.5f;
     }
 }
 

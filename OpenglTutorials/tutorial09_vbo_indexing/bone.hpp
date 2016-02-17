@@ -26,8 +26,8 @@ public:
     glm::vec3 position;
     glm::mat4 ModelMatrix = glm::mat4(1.0);
     glm::mat4 MVP = glm::mat4(1.0);
-    Bone* child;
-    Bone* parent;
+    Bone* child = NULL;
+    Bone* parent = NULL;
     void addChild(Bone *bone);
     void addParent(Bone *bone);
     void update(float rotation, glm::mat4 ModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);

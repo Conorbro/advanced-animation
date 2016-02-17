@@ -25,7 +25,6 @@ public:
     Skeleton(Bone root_bone);
     void addBone(Bone &b);
     void querySkeleton();
-    void drawSkeleton(Bone &b, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
     void bindDraw(GLuint vertexbuffer,
                   GLuint uvbuffer,
                   GLuint normalbuffer,

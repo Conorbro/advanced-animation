@@ -25,7 +25,6 @@ public:
     Finger(Bone root_bone);
     void addBone(Bone &b);
     void queryFinger();
-    void drawFinger(Bone &b, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
     void bindDraw(GLuint vertexbuffer,
                   GLuint uvbuffer,
                   GLuint normalbuffer,
