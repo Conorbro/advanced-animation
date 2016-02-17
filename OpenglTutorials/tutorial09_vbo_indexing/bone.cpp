@@ -15,7 +15,7 @@ using namespace std;
 
 Bone::Bone()
 {
-    printf("Object is being created\n");
+//    printf("Object is being created\n");
 }
 
 void Bone::update(float rotation, glm::mat4 ModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
@@ -38,12 +38,7 @@ void Bone::updateChild(glm::mat4 ParentMVP) {
     
     this->child->MVP = ParentMVP * this->child->ModelMatrix;
     if(this->child->hasChild()) {
-        cout << "1" << endl;
-        cout << this->child->child << endl;
         this->child->updateChild(this->child->MVP);
-        cout << "Child Updated" << endl;
-    } else {
-        cout << "0" << endl;
     }
 }
 

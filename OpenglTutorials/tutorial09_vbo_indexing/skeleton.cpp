@@ -20,29 +20,22 @@
 using namespace std;
 
 Skeleton::Skeleton(Bone root_bone) {
-    num_bones = 0;
     root = root_bone;
-    addBone(root);
-    root.id = num_bones;
 }
 
-void Skeleton::addBone(Bone &b) {
-    num_bones += 1;
-    b.id = num_bones;
-    if (num_bones <= 1){
-        b.parentRef = num_bones - 1; // assign -1 as parent ref for root bone
-    } else b.parentRef = -1;
-    bones.push_back(b);
-    printf("Bone id = %i\n", b.id);
-    printf("Bone Parent = %i\n", b.parentRef);
-
+void Skeleton::addFinger(Finger &f) {
+    num_fingers += 1;
+    fingers.push_back(&f);
 }
 
 void Skeleton::querySkeleton() {
-    printf("Number of Bones in Skeleton = %i\n", num_bones);
+    printf("Number of Fingers in Skeleton = %i\n", num_fingers);
     printf("Root bone id = %i\n", root.id);
-    for(int i = 0; i<bones.size(); i++) {
-        printf("Bone List Item: %i\n", bones[i].id);
+}
+
+void Skeleton::rotateSkeleton(glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
+    for(int i=0; i<fingers.size(); i++) {
+        this->fingers[i]->bones[0]->update(0.1f, fingers[i]->bones[0]->ModelMatrix, ProjectionMatrix, ViewMatrix);
     }
 }
 

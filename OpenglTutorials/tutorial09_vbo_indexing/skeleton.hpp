@@ -15,16 +15,18 @@
 #include <glfw3.h>
 #include <vector>
 
+#include "finger.hpp"
 #include "bone.hpp"
 
 class Skeleton {
 public:
-    int num_bones;
+    int num_fingers;
     Bone root;
-    std::vector<Bone> bones;
     Skeleton(Bone root_bone);
-    void addBone(Bone &b);
+    std::vector<Finger*> fingers;
+    void addFinger(Finger &finger);
     void querySkeleton();
+    void rotateSkeleton(glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
     void bindDraw(GLuint vertexbuffer,
                   GLuint uvbuffer,
                   GLuint normalbuffer,

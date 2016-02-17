@@ -8,6 +8,7 @@ extern GLFWwindow* window; // The "extern" keyword here is to access the variabl
 // Include GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
 using namespace glm;
 
 #include "controls.hpp"
@@ -24,11 +25,11 @@ glm::mat4 getProjectionMatrix(){
 
 
 // Initial position : on +Z
-glm::vec3 position = glm::vec3( 10.63, 0.0, 8.6);
+glm::vec3 position = glm::vec3(0.07, 1.83, 11.53);
 // Initial horizontal angle : toward -Z
-float horizontalAngle = 3.91f;
+float horizontalAngle = 3.11f;
 // Initial vertical angle : none
-float verticalAngle = 0.13f;
+float verticalAngle = -0.025f;
 // Initial Field of View
 float initialFoV = 45.0f;
 
@@ -39,6 +40,12 @@ float mouseSpeed = 0.005f;
 
 void computeMatricesFromInputs(){
     
+//    std::cout << "X = " << position.x << std::endl;
+//    std::cout << "Y = " << position.y << std::endl;
+//    std::cout << "Z = " << position.z << std::endl;
+//    std::cout << "Horizontal Angle = " << horizontalAngle << std::endl;
+//    std::cout << "Vertical Angle = " << verticalAngle << std::endl;
+////
     // glfwGetTime is called only once, the first time this function is called
     static double lastTime = glfwGetTime();
     

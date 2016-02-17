@@ -35,8 +35,8 @@ void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat
 GLuint MatrixID, ViewMatrixID, ModelMatrixID;
 GLuint vertexbuffer, uvbuffer, normalbuffer, elementbuffer;
 std::vector<unsigned short> indices;
-Bone rooot;
-Skeleton skeleton(rooot);
+Bone wrist;
+Skeleton skeleton(wrist);
 
 int main( void )
 {
@@ -122,8 +122,27 @@ int main( void )
     finger5Bone1.addParent(&root5);
     finger5Bone2.addParent(&finger5Bone1);
     
-    finger5.queryFinger();
-//    skeleton.querySkeleton();
+    // Finger 6 (Wrist)
+    Bone finger6Bone1;
+    Bone finger6Bone2;
+    
+    Finger finger6(wrist);
+    
+    finger6.addBone(finger6Bone1);
+    finger6.addBone(finger6Bone2);
+    
+    wrist.addChild(&finger6Bone1);
+    finger6Bone1.addChild(&finger6Bone2);
+    
+    finger6Bone1.addParent(&wrist);
+    finger6Bone2.addParent(&finger6Bone1);
+    
+    skeleton.addFinger(finger1);
+    skeleton.addFinger(finger2);
+    skeleton.addFinger(finger3);
+    skeleton.addFinger(finger4);
+    skeleton.addFinger(finger5);
+    
     initStuff();
 
 	GLuint VertexArrayID;
@@ -188,11 +207,35 @@ int main( void )
     initMVP(finger1, 0.0f, ProjectionMatrix, ViewMatrix);
     initMVP(finger2, 0.5f, ProjectionMatrix, ViewMatrix);
     initMVP(finger3, -0.5f, ProjectionMatrix, ViewMatrix);
-    initMVP(finger4, 1.0f, ProjectionMatrix, ViewMatrix);
-    initMVP(finger5, -1.0f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger4, 10.0f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger5, -10.0f, ProjectionMatrix, ViewMatrix);
     
+    glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
+    root.ModelMatrix = glm::translate(root.ModelMatrix, position);
+    root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
     
-    // GAME LOOP /////r
+    position = glm::vec3(2.0f, 0.0f, 0.0f);
+    root2.ModelMatrix = glm::translate(root2.ModelMatrix, position);
+    root2.MVP = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
+    
+    position = glm::vec3(-2.0f, 0.0f, 0.0f);
+    root3.ModelMatrix = glm::translate(root3.ModelMatrix, position);
+    root3.MVP = ProjectionMatrix * ViewMatrix * root3.ModelMatrix;
+    
+    position = glm::vec3(-4.0f, 0.0f, 0.0f);
+    root4.ModelMatrix = glm::translate(root4.ModelMatrix, position);
+    root4.MVP = ProjectionMatrix * ViewMatrix * root4.ModelMatrix;
+    
+    position = glm::vec3(4.0f, -2.0f, 0.0f);
+    root5.ModelMatrix = glm::translate(root5.ModelMatrix, position);
+    root5.ModelMatrix = glm::rotate(root5.ModelMatrix, 90.0f, glm::vec3(0, 0, 1));
+    root5.MVP = ProjectionMatrix * ViewMatrix * root5.ModelMatrix;
+
+    position = glm::vec3(0.0f, -3.0f, 0.0f);
+    wrist.ModelMatrix = glm::translate(wrist.ModelMatrix, position);
+    wrist.MVP = ProjectionMatrix * ViewMatrix * wrist.ModelMatrix;
+    
+    // GAME LOOP //
     do{
         ProjectionMatrix = getProjectionMatrix();
         ViewMatrix = getViewMatrix();
@@ -217,7 +260,7 @@ int main( void )
 		// Use our shader
 		glUseProgram(programID);
 	
-		glm::vec3 lightPos = glm::vec3(4,4,4);
+		glm::vec3 lightPos = glm::vec3(2, 2, 2);
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]); // This one doesn't change between objects, so this can be done once for all objects that use "programID"
 
@@ -228,6 +271,7 @@ int main( void )
         root3.MVP = ProjectionMatrix * ViewMatrix * root3.ModelMatrix;
         root4.MVP = ProjectionMatrix * ViewMatrix * root4.ModelMatrix;
         root5.MVP = ProjectionMatrix * ViewMatrix * root5.ModelMatrix;
+        wrist.MVP = ProjectionMatrix * ViewMatrix * wrist.ModelMatrix;
         
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
@@ -248,6 +292,10 @@ int main( void )
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root5.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root5.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &wrist.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &wrist.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
 	
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
@@ -261,6 +309,7 @@ int main( void )
         render(finger3, ProjectionMatrix, ViewMatrix);
         render(finger4, ProjectionMatrix, ViewMatrix);
         render(finger5, ProjectionMatrix, ViewMatrix);
+        render(finger6, ProjectionMatrix, ViewMatrix);
         
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -296,26 +345,42 @@ int main( void )
         if (glfwGetKey( window, GLFW_KEY_H ) == GLFW_PRESS){
             root2.update(0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
-        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
+        if (glfwGetKey( window, GLFW_KEY_Y ) == GLFW_PRESS){
             root3.update(-0.1f, root3.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
-        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
+        if (glfwGetKey( window, GLFW_KEY_G ) == GLFW_PRESS){
             root3.update(0.1f, root3.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
-        if (glfwGetKey( window, GLFW_KEY_Y ) == GLFW_PRESS){
-            root4.update(-0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
-            cout << "NOW HERE" << endl;
-        }
-        if (glfwGetKey( window, GLFW_KEY_G ) == GLFW_PRESS){
-            root4.update(0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
-        }
         if (glfwGetKey( window, GLFW_KEY_T ) == GLFW_PRESS){
-            root5.update(-0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root4.update(-0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
         if (glfwGetKey( window, GLFW_KEY_F ) == GLFW_PRESS){
+            root4.update(0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
+            root5.update(-0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
             root5.update(0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
         }
-        
+        if (glfwGetKey( window, GLFW_KEY_B ) == GLFW_PRESS){
+            skeleton.rotateSkeleton(ProjectionMatrix, ViewMatrix);
+            root.update(0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root2.update(0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root3.update(0.1f, root3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root4.update(0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root5.update(0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            wrist.update(0.1f, wrist.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_N ) == GLFW_PRESS){
+            skeleton.rotateSkeleton(ProjectionMatrix, ViewMatrix);
+            root.update(-0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root2.update(-0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root3.update(-0.1f, root3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root4.update(-0.1f, root4.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root5.update(-0.1f, root5.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            wrist.update(-0.1f, wrist.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
 
 	} // Check if the ESC key was pressed or the window was closed
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
@@ -350,10 +415,13 @@ void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat
     for (int i = 0; i<finger.bones.size(); i++) {
         if (i==0) {
             finger.bones[i]->position = glm::vec3(offSetX, 0.0f, offSetZ);
+            finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
+            finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
+        } else {
+            finger.bones[i]->position = glm::vec3(0.0f, 0.0f, offSetZ);
+            finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
+            finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
         }
-        finger.bones[i]->position = glm::vec3(0.0f, 0.0f, offSetZ);
-        finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
-        finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
     }
 }
 

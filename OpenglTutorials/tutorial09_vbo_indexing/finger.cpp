@@ -33,8 +33,8 @@ void Finger::addBone(Bone &b) {
         b.parentRef = num_bones - 1; // assign -1 as parent ref for root bone
     } else b.parentRef = -1;
     bones.push_back(&b);
-    printf("Bone id = %i\n", b.id);
-    printf("Bone Parent = %i\n", b.parentRef);
+//    printf("Bone id = %i\n", b.id);
+//    printf("Bone Parent = %i\n", b.parentRef);
     
 }
 
