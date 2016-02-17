@@ -1,5 +1,6 @@
 // Include standard headers
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <vector>
 
@@ -25,45 +26,68 @@ using namespace glm;
 
 #include "bone.hpp"
 #include "skeleton.hpp"
+#include "finger.hpp"
 
 int initStuff();
+void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
+void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
 
-void drawBone(Bone bone, mat4 ProjectionMatrix, mat4 ViewMatrix) {
-    
-}
-
-void drawSkeleton(Bone root, mat4 ProjectionMatrix, mat4 ViewMatrix) {
-    
-}
+GLuint MatrixID, ViewMatrixID, ModelMatrixID;
+GLuint vertexbuffer, uvbuffer, normalbuffer, elementbuffer;
+std::vector<unsigned short> indices;
+Bone rooot;
+Skeleton skeleton(rooot);
 
 int main( void )
 {
+    
+    // Finger 1
     // Init root bone and child bone
     Bone root;
     Bone child;
     Bone child2;
-//    Bone child3;
+    Bone child3;
     
     // init skeleton and pass root bone to set root, root automatically added as bone
-    Skeleton skeleton(root);
+    Finger finger1(root);
     
     // add child bone to skeleton
-    skeleton.addBone(child);
-    skeleton.addBone(child2);
-//    skeleton.addBone(child3);
+    finger1.addBone(child);
+    finger1.addBone(child2);
+    finger1.addBone(child3);
     
     // Associate child bones
     root.addChild(&child);
     child.addChild(&child2);
-//    child2.addChild(&child3);
+    child2.addChild(&child3);
     
     // Associated parent bones
     child.addParent(&root);
     child2.addParent(&child);
-//    child3.addParent(&child2);
+    child3.addParent(&child2);
     
-    skeleton.querySkeleton();
+    // Finger 2
+    Bone root2;
+    Bone finger2Bone1;
+    Bone finger2Bone2;
+    Bone finger2Bone3;
     
+    Finger finger2(root2);
+    finger2.addBone(finger2Bone1);
+    finger2.addBone(finger2Bone2);
+    finger2.addBone(finger2Bone3);
+    
+    // Associations for finger 2
+    root2.addChild(&finger2Bone1);
+    finger2Bone1.addChild(&finger2Bone2);
+    finger2Bone2.addChild(&finger2Bone3);
+    
+    // Associated parent bones
+    finger2Bone1.addParent(&root2);
+    finger2Bone2.addParent(&finger2Bone1);
+    finger2Bone3.addParent(&finger2Bone2);
+    
+//    skeleton.querySkeleton();
     initStuff();
 
 	GLuint VertexArrayID;
@@ -74,9 +98,9 @@ int main( void )
 	GLuint programID = LoadShaders( "StandardShading.vertexshader", "StandardShading.fragmentshader" );
 
 	// Get a handle for our "MVP" uniform
-	GLuint MatrixID = glGetUniformLocation(programID, "MVP");
-	GLuint ViewMatrixID = glGetUniformLocation(programID, "V");
-	GLuint ModelMatrixID = glGetUniformLocation(programID, "M");
+    MatrixID = glGetUniformLocation(programID, "MVP");
+    ViewMatrixID = glGetUniformLocation(programID, "V");
+	ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Load the texture
 	GLuint Texture = loadDDS("uvmap.DDS");
@@ -90,7 +114,6 @@ int main( void )
 	std::vector<glm::vec3> normals;
 	bool catModel = loadOBJ("cat.obj", vertices, uvs, normals);
 
-	std::vector<unsigned short> indices;
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
 	std::vector<glm::vec3> indexed_normals;
@@ -98,23 +121,19 @@ int main( void )
 
 	// Load it into a VBO
 
-	GLuint vertexbuffer;
 	glGenBuffers(1, &vertexbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_vertices.size() * sizeof(glm::vec3), &indexed_vertices[0], GL_STATIC_DRAW);
 
-	GLuint uvbuffer;
 	glGenBuffers(1, &uvbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_uvs.size() * sizeof(glm::vec2), &indexed_uvs[0], GL_STATIC_DRAW);
 
-	GLuint normalbuffer;
 	glGenBuffers(1, &normalbuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
 	glBufferData(GL_ARRAY_BUFFER, indexed_normals.size() * sizeof(glm::vec3), &indexed_normals[0], GL_STATIC_DRAW);
 
 	// Generate a buffer for the indices as well
-	GLuint elementbuffer;
 	glGenBuffers(1, &elementbuffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned short), &indices[0] , GL_STATIC_DRAW);
@@ -126,35 +145,15 @@ int main( void )
 	// For speed computation
 	double lastTime = glfwGetTime();
 	int nbFrames = 0;
-
-    // Init root model matrix 1
-    root.position = glm::vec3(0.0f, 0.0f, 0.0f);
-    root.ModelMatrix = glm::translate(root.ModelMatrix, root.position);
-    
-    // Init model matrix 2
-    child.position = glm::vec3(0.0f, 0.0f, 1.0f);
-    child.ModelMatrix = glm::translate(child.ModelMatrix, child.position);
-    
-    // Init model matrix 3
-    child2.position = glm::vec3(0.0f, 0.0f, 1.2f);
-    child2.ModelMatrix = glm::translate(child2.ModelMatrix, child2.position);
-    
-    // Init model matrix 4
-//    child3.position = glm::vec3(0.0f, 0.0f, 2.0f);
-//    child3.ModelMatrix = glm::translate(child3.ModelMatrix, child3.position);
     
     glm::mat4 ProjectionMatrix = getProjectionMatrix();
     glm::mat4 ViewMatrix = getViewMatrix();
     
-//    child3.MVP = ProjectionMatrix * ViewMatrix * child3.ModelMatrix;
+    initMVP(finger1, 0.0f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger2, 0.3f, ProjectionMatrix, ViewMatrix);
     
     // GAME LOOP /////
-    root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
-    child.MVP = ProjectionMatrix * ViewMatrix * child.ModelMatrix;
-    child2.MVP = ProjectionMatrix * ViewMatrix * child2.ModelMatrix;
-    
     do{
-      root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
       ProjectionMatrix = getProjectionMatrix();
       ViewMatrix = getViewMatrix();
 		// Measure speed
@@ -170,7 +169,6 @@ int main( void )
 		// Clear the screen
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
 		// Compute the MVP matrix from keyboard and mouse input
 		computeMatricesFromInputs();
 		
@@ -183,48 +181,29 @@ int main( void )
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]); // This one doesn't change between objects, so this can be done once for all objects that use "programID"
 
-		// Send our transformation to the currently bound shader, 
+		// Send our transformation to the currently bound shader,
 		// in the "MVP" uniform
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root2.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root2.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
 	
-
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, Texture);
 		// Set our "myTextureSampler" sampler to user Texture Unit 0
 		glUniform1i(TextureID, 0);
+        
+        root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
+        root2.MVP = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
 
         // FIRST OBJECT
-        
-        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
-        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
-        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-
-		////// End of rendering of the first object //////
-		
-		//SECOND OBJECT
-
-		// Send our transformation to the currently bound shader, 
-		// in the "MVP" uniform
-		glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &child.MVP[0][0]);
-		glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &child.ModelMatrix[0][0]);
-        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-
-		////// End of rendering of the second object //////
-
-        //THIRD OBJECT
-        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &child2.MVP[0][0]);
-        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &child2.ModelMatrix[0][0]);
-        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-        
-        ////// End of rendering of the third object //////
-        
-//        //FOURTH OBJECT
-//        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &child3.MVP[0][0]);
-//        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &child3.ModelMatrix[0][0]);
-//        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-//        
-//        ////// End of rendering of the fourth object //////
-        
+        render(finger1, ProjectionMatrix, ViewMatrix);
+        render(finger2, ProjectionMatrix, ViewMatrix);
         
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -238,50 +217,34 @@ int main( void )
         // Move Parent Cat Up and Down, update Child Cat relatively
         if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
             root.update(-0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//            root.ModelMatrix = glm::rotate(root.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
-//            child.MVP = root.MVP*child.ModelMatrix;
-//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
             root.update(0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
-            
-            // Rotate 'root' bone
-            // rotate children
-            
-//            root.ModelMatrix = glm::rotate(root.ModelMatrix, 0.1f, glm::vec3(1, 0, 0));
-//            child.MVP = root.MVP*child.ModelMatrix;
-//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_P ) == GLFW_PRESS){
             child.update(-0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//            child.ModelMatrix = glm::rotate(child.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
-//            child.MVP = root.MVP*child.ModelMatrix;
-//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
         if (glfwGetKey( window, GLFW_KEY_L ) == GLFW_PRESS){
             child.update(0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//            child.ModelMatrix = glm::rotate(child.ModelMatrix, 0.1f, glm::vec3(1, 0, 0));
-//            child.MVP = root.MVP*child.ModelMatrix;
-//            child2.MVP = child.MVP*child2.ModelMatrix;
         }
-        
         if (glfwGetKey( window, GLFW_KEY_O ) == GLFW_PRESS){
             child2.update(-0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//            child2.MVP = child.MVP*child2.ModelMatrix;
-
         }
         if (glfwGetKey( window, GLFW_KEY_K ) == GLFW_PRESS){
             child2.update(0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//            child2.MVP = child.MVP*child2.ModelMatrix;
-
         }
-//        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
-//            child3.updateRoot(-0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//        }
-//        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
-//            child3.updateRoot(0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
-//        }
-        
+        if (glfwGetKey( window, GLFW_KEY_I ) == GLFW_PRESS){
+            child3.update(-0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_J ) == GLFW_PRESS){
+            child3.update(0.1f, child3.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_U ) == GLFW_PRESS){
+            root2.update(-0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
+        if (glfwGetKey( window, GLFW_KEY_H ) == GLFW_PRESS){
+            root2.update(0.1f, root2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+        }
         
 
 	} // Check if the ESC key was pressed or the window was closed
@@ -304,9 +267,23 @@ int main( void )
 	return 0;
 }
 
+void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
+    for(int i = 1; i<finger.bones.size(); i++) {
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &finger.bones[i]->MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &finger.bones[i]->ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+    }
+}
 
-
-
+void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
+    float offSetZ = 0.0f;
+    for (int i = 0; i<finger.bones.size(); i++) {
+        finger.bones[i]->position = glm::vec3(0.0f, offSetX, offSetZ);
+        finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
+        finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
+        offSetZ += 0.5f;
+    }
+}
 
 int initStuff() {
     
@@ -325,7 +302,7 @@ int initStuff() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     // Open a window and create its OpenGL context
-    window = glfwCreateWindow( 1024, 768, "Hand Model", NULL, NULL);
+    window = glfwCreateWindow( 1024, 768, "Hierarchical Hand Model", NULL, NULL);
     if( window == NULL ){
         fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
         getchar();
@@ -342,7 +319,6 @@ int initStuff() {
         glfwTerminate();
         return -1;
     }
-    
     
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);

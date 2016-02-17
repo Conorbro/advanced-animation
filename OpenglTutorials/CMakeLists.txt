@@ -264,6 +264,8 @@ add_executable(tutorial09_several_objects
     tutorial09_vbo_indexing/skeleton.hpp
     tutorial09_vbo_indexing/bone.cpp
     tutorial09_vbo_indexing/bone.hpp
+    tutorial09_vbo_indexing/finger.cpp
+    tutorial09_vbo_indexing/finger.hpp
 
 	tutorial09_vbo_indexing/StandardShading.vertexshader
 	tutorial09_vbo_indexing/StandardShading.fragmentshader

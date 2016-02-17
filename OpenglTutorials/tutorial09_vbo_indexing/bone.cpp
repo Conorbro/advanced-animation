@@ -23,25 +23,15 @@ void Bone::update(float rotation, glm::mat4 ModelMatrix, glm::mat4 ProjectionMat
     // Rotate bone's model matrix
     this->ModelMatrix = glm::rotate(ModelMatrix, rotation, glm::vec3(1, 0, 0));
     
-    // Apply new model matrix to bone's mvp
-    
     if(this->hasParent()) {
         this->MVP = this->parent->MVP * this->ModelMatrix;
     }
-    
-    //    this->MVP = ProjectionMatrix * ViewMatrix * this->ModelMatrix;
-    
-    //            child.ModelMatrix = glm::rotate(child.ModelMatrix, -0.1f, glm::vec3(1, 0, 0));
-    //            child.MVP = root.MVP*child.ModelMatrix; ******
-    //            child2.MVP = child.MVP*child2.ModelMatrix;
     
     // If the bone has a child, update the child with the current bone's mvp
     if(this->hasChild()) {
         this->updateChild(this->MVP);
     }
-//    else if (this->hasParent()) {
-//        this->MVP = this->parent->MVP * this->ModelMatrix;
-//    }
+
 
 }
 
