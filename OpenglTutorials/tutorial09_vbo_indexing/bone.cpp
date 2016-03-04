@@ -19,9 +19,9 @@ Bone::Bone()
 }
 
 void Bone::update(float rotation, glm::mat4 ModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
-        
+    
     // Rotate bone's model matrix
-    this->ModelMatrix = glm::rotate(ModelMatrix, rotation, glm::vec3(1, 0, 0));
+    this->ModelMatrix = glm::rotate(ModelMatrix, rotation, glm::vec3(0, 0, 1));
     if(this->hasParent()) {
         this->MVP = this->parent->MVP * this->ModelMatrix;
     }

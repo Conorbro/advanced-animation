@@ -36,17 +36,8 @@ float initialFoV = 45.0f;
 float speed = 3.0f; // 3 units / second
 float mouseSpeed = 0.005f;
 
-
-
 void computeMatricesFromInputs(){
     
-//    std::cout << "X = " << position.x << std::endl;
-//    std::cout << "Y = " << position.y << std::endl;
-//    std::cout << "Z = " << position.z << std::endl;
-//    std::cout << "Horizontal Angle = " << horizontalAngle << std::endl;
-//    std::cout << "Vertical Angle = " << verticalAngle << std::endl;
-////
-    // glfwGetTime is called only once, the first time this function is called
     static double lastTime = glfwGetTime();
     
     // Compute time difference between current and last frame
@@ -54,15 +45,11 @@ void computeMatricesFromInputs(){
     float deltaTime = float(currentTime - lastTime);
     
     // Get mouse position
-    double xpos, ypos;
-    glfwGetCursorPos(window, &xpos, &ypos);
+//    double xpos, ypos;
+//    glfwGetCursorPos(window, &xpos, &ypos);
     
     // Reset mouse position for next frame
-    glfwSetCursorPos(window, 1024/2, 768/2);
-    
-    // Compute new orientation
-    horizontalAngle += mouseSpeed * float(1024/2 - xpos );
-    verticalAngle   += mouseSpeed * float( 768/2 - ypos );
+//    glfwSetCursorPos(window, 1024/2, 768/2);
     
     // Direction : Spherical coordinates to Cartesian coordinates conversion
     glm::vec3 direction(
