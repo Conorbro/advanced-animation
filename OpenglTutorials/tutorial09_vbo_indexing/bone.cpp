@@ -54,8 +54,8 @@ void Bone::updateChild(glm::mat4 ParentMVP, glm::mat4 ParentModelMatrix) {
     
     child->ModelMatrixTemp = ParentModelMatrix * child->ModelMatrix;
 
-    glm::vec3 currBonePosition = glm::vec3(child->ModelMatrixTemp[3]);
-    cout << "Curr Joint Position from MM Child" << child->id << " " << currBonePosition[0] << " " << currBonePosition[1] << " "  << currBonePosition[2] << endl;
+//    glm::vec3 currBonePosition = glm::vec3(child->ModelMatrixTemp[3]);
+//    cout << "Curr Joint Position from MM Child" << child->id << " " << currBonePosition[0] << " " << currBonePosition[1] << " "  << currBonePosition[2] << endl;
     
     if(child->hasChild()) {
         child->updateChild(child->MVP, child->ModelMatrixTemp);

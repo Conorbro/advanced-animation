@@ -57,6 +57,7 @@ float angle;
 float rotate_angle = 0.01f;
 bool test = true;
 float translateAmount = 0.0f;
+bool rotatee = true;
 
 int main( void )
 {
@@ -226,24 +227,28 @@ int main( void )
         if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
             root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(translateAmount, 0.0f, 0.0f));
             targetPosition.x += translateAmount;
+            cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
         }
         
         if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS){
             root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(-translateAmount, 0.0f, 0.0f));
             targetPosition.x -= translateAmount;
+            cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
         }
         
         if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS){
             root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(0.0f, translateAmount, 0.0f));
             targetPosition.y += translateAmount;
+            cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
         }
         
         if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
             root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(0.0f, -translateAmount, 0.0f));
             targetPosition.y -= translateAmount;
+            cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
         }
         
@@ -278,35 +283,29 @@ int main( void )
 
         if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS && test == true){
 
-//            for(int i=finger1.num_bones-2; i>-1 ; i--) {
+            for(int i=finger1.num_bones-2; i>-1 ; i--) {
             
-                glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]);
+                glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
 
                 cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
                 
-                glm::vec3 currBonePosition = glm::vec3(finger1.bones[1]->ModelMatrixTemp[3]);
+                glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
                 
                 glm::vec3 targetVector = glm::vec3(targetPosition.x - currBonePosition.x, targetPosition.y - currBonePosition.y, 0.0f);
                 targetVector = glm::normalize(targetVector);
                 
-                glm::vec3 outerMostJointVector = glm::vec3(endPointPosition.x - currBonePosition.x, endPointPosition.y - currBonePosition.y, 0.0f);
+                glm::vec3 outerMostJointVector = glm::vec3(endEffectorBonePosition.x - currBonePosition.x, endEffectorBonePosition.y - currBonePosition.y, 0.0f);
                 outerMostJointVector = glm::normalize(outerMostJointVector);
-            
-                float angle = glm::acos(glm::dot(targetVector, outerMostJointVector));
-            
-                endPointPosition.x = currBonePosition.x + 2 * sin(angle) * -1;
-                endPointPosition.z = currBonePosition.z + 2 * cos(angle);
-                
-                float xd = targetPosition.x - endEffectorBonePosition.x;
-                float yd = targetPosition.y - endEffectorBonePosition.y;
-                float distance = sqrt((xd*xd) + (yd*yd));
             
             glm::vec3 distance2 = glm::vec3(endEffectorBonePosition.x - targetPosition.x, endEffectorBonePosition.y - targetPosition.y, 0.0f);
             
-            if (glm::length(distance2) < 1.0f)
+            if (glm::length(distance2) < 0.1f)
             {
                 //exit - don't do any rotation
                 //distance is too small for rotation to be numerically stable
+                rotatee = false;
+            } else {
+                rotatee = true;
             }
             
             //Don't actually need to call normalize for directionA - just doing it to indicate
@@ -316,10 +315,13 @@ int main( void )
             
             float rotationAngle = glm::acos(glm::dot(targetVector, outerMostJointVector));
             
-            if (abs(rotationAngle) < 1.0f)
+            if (abs(rotationAngle) < 0.1f)
             {
                 //exit - don't do any rotation
                 //angle is too small for rotation to be numerically stable
+                rotatee = false;
+            } else {
+                rotatee = true;
             }
             
 //            final Vector3 rotationAxis = directionA.clone().cross(directionB).normalize();
@@ -328,16 +330,17 @@ int main( void )
             //rotate object about rotationAxis by rotationAngle
             
 //                cout << "Distance = " << distance << endl;
-                cout << "Angle = " << angle << endl;
+                cout << "Angle = " << rotationAngle << endl;
 //                cout << "Target Position = " << targetPosition.x << " " << targetPosition.y << endl;
 //                cout << "EndeffectorPosition = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y;
-                if(distance > 1.0f && rotationAngle != 0) {
-//                    for(float j = 0.01f; j<angle; j+=0.01f) {
-                        finger1.bones[1]->update(rotationAngle, rotationAxis);
-//                    }
+                if(rotatee) {
+                    for(float j = 0.01f; j<rotationAngle; j+=0.01f) {
+                        finger1.bones[i]->update(-0.0001f, rotationAxis);
+                    }
                 }
                 
                 }
+        }
 //            }
 //        }
 
