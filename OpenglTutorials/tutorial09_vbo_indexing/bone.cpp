@@ -11,6 +11,16 @@
 #include <iostream>
 #include <vector>
 
+// Include GLM
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/norm.hpp>
+#include <glm/gtc/matrix_access.hpp>
+using namespace glm;
+
 using namespace std;
 
 Bone::Bone()
@@ -18,27 +28,37 @@ Bone::Bone()
 //    printf("Object is being created\n");
 }
 
-void Bone::update(float rotation, glm::mat4 ModelMatrix, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
-    
+void Bone::update(float rotation, glm::vec3 rotationAxis) {
+
     // Rotate bone's model matrix
-    this->ModelMatrix = glm::rotate(ModelMatrix, rotation, glm::vec3(0, 0, 1));
-    if(this->hasParent()) {
-        this->MVP = this->parent->MVP * this->ModelMatrix;
+    ModelMatrix = glm::rotate(ModelMatrix, rotation, rotationAxis);
+    if(hasParent()) {
+        MVP = parent->MVP * ModelMatrix;
+        ModelMatrixTemp = parent->ModelMatrix * ModelMatrix;
+        
+//        glm::vec3 currBonePosition = glm::vec3(ModelMatrixTemp[3]);
+//          cout << "Curr Joint Position from MM Bone" << this->id << " " << currBonePosition[0] << " " << currBonePosition[1] << " "  << currBonePosition[2] << endl;
+    
     }
     
     // If the bone has a child, update the child with the current bone's mvp
-    if(this->hasChild()) {
-        this->updateChild(this->MVP);
+    if(hasChild()) {
+        updateChild(MVP, ModelMatrix);
     }
-
 
 }
 
-void Bone::updateChild(glm::mat4 ParentMVP) {
+void Bone::updateChild(glm::mat4 ParentMVP, glm::mat4 ParentModelMatrix) {
     
-    this->child->MVP = ParentMVP * this->child->ModelMatrix;
-    if(this->child->hasChild()) {
-        this->child->updateChild(this->child->MVP);
+    child->MVP = ParentMVP*child->ModelMatrix;
+    
+    child->ModelMatrixTemp = ParentModelMatrix * child->ModelMatrix;
+
+    glm::vec3 currBonePosition = glm::vec3(child->ModelMatrixTemp[3]);
+    cout << "Curr Joint Position from MM Child" << child->id << " " << currBonePosition[0] << " " << currBonePosition[1] << " "  << currBonePosition[2] << endl;
+    
+    if(child->hasChild()) {
+        child->updateChild(child->MVP, child->ModelMatrixTemp);
     }
 }
 

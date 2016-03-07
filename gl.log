@@ -1,0 +1,6 @@
+GL_LOG_FILE log. local time Fri Feb  5 20:38:57 2016
+
+starting GLFW 3.0.2 Cocoa NSGL chdir menubarrenderer: Intel Iris Pro OpenGL Engine
+version: 4.1 INTEL-10.12.13
+creating shader from test_vs.glsl...
+ERROR: opening file for reading: test_vs.glsl

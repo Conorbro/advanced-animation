@@ -7,6 +7,8 @@
 // Include GLEW
 #include <GL/glew.h>
 
+#include <GLUT/glut.h>
+
 // Include GLFW
 #include <glfw3.h>
 GLFWwindow* window;
@@ -38,7 +40,7 @@ using namespace glm;
 
 int initStuff();
 void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
-void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
+void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
 void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float deltaTime);
 
 GLuint MatrixID, ViewMatrixID, ModelMatrixID;
@@ -48,11 +50,13 @@ Bone wrist;
 Skeleton skeleton(wrist);
 
 // Would be preferable not to have to hard code this - mouse click would be nice :)
-glm::vec3 targetPosition = glm::vec3(2.5f, 0.0f, 2.0f);
+glm::vec3 targetPosition = glm::vec3(6.0f, 6.0f, 0.0f);
 glm::vec3 endPointPosition;
 glm::vec3 currJointPosition;
 float angle;
+float rotate_angle = 0.01f;
 bool test = true;
+float translateAmount = 0.0f;
 
 int main( void )
 {
@@ -60,18 +64,23 @@ int main( void )
     // Finger 1
     // Init root bone and child bone
     Bone root;
+    Bone root2;
     Bone child;
     Bone child2;
+    Bone endEffectorBone;
     Finger finger1(root);
     
     finger1.addBone(child);
     finger1.addBone(child2);
+    finger1.addBone(endEffectorBone);
     
     root.addChild(&child);
     child.addChild(&child2);
+    child2.addChild(&endEffectorBone);
     
     child.addParent(&root);
     child2.addParent(&child);
+    endEffectorBone.addParent(&child2);
 
     skeleton.addFinger(finger1);
     
@@ -99,7 +108,7 @@ int main( void )
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
-	loadOBJ("cat.obj", vertices, uvs, normals);
+	loadOBJ("cube.obj", vertices, uvs, normals);
 
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
@@ -136,21 +145,21 @@ int main( void )
     glm::mat4 ProjectionMatrix = getProjectionMatrix();
     glm::mat4 ViewMatrix = getViewMatrix();
     
-    initMVP(finger1, 0.0f, ProjectionMatrix, ViewMatrix);
+    initMVP(finger1, ProjectionMatrix, ViewMatrix);
+    
+    root2.position = targetPosition;
+    root2.ModelMatrix = glm::translate(root2.ModelMatrix, root2.position);
+    root2.MVP = root2.ModelMatrix  * ViewMatrix * ProjectionMatrix;
     
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::rotate(root.ModelMatrix, 20.0f, glm::vec3(1, 0, 0));
-    root.ModelMatrix = glm::translate(root.ModelMatrix, position);
-    root.MVP = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
-    
+
     position = glm::vec3(2.0f, 0.0f, 0.0f);
-    endPointPosition = glm::vec3(child2.position.x + 1.0f, child2.position.y + 1.0f, 0.0f);
+    endPointPosition = glm::vec3(child2.position.x + 1.0f, child2.position.y + 1.0f, 0.0f); // COMPLETE TEMPORARY GUESS WORK
     double xpos, ypos;
-    
     // GAME LOOP //
-    do{        
+    
+    do{
         glfwGetCursorPos(window, &xpos, &ypos);
-        targetPosition = glm::vec3(xpos, 0.0f, ypos);
         ProjectionMatrix = getProjectionMatrix();
         ViewMatrix = getViewMatrix();
 		// Measure speed
@@ -158,7 +167,7 @@ int main( void )
 		nbFrames++;
 		if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1sec ago
 			// printf and reset
-			printf("%f ms/frame\n", 1000.0/double(nbFrames));
+//			printf("%f ms/frame\n", 1000.0/double(nbFrames));
 			nbFrames = 0;
 			lastTime += 1.0;
 		}
@@ -181,9 +190,14 @@ int main( void )
 		// Send our transformation to the currently bound shader,
 		// in the "MVP" uniform
         root.MVP  = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
+        root2.MVP  = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
    
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root2.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root2.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
    
 		// Bind our texture in Texture Unit 0
@@ -203,67 +217,130 @@ int main( void )
 		glfwSwapBuffers(window);
 		glfwPollEvents();
         
+//        // Get cursor coordinates (currently just relative to window, I think...)
+//        if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_PRESS){
+//            targetPosition = glm::vec3(xpos, 0.0f, ypos);
+//            cout << targetPosition.x << " " << targetPosition.z << endl;
+//        }
+        
+        if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
+            root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(translateAmount, 0.0f, 0.0f));
+            targetPosition.x += translateAmount;
+            translateAmount += 0.001f;
+        }
+        
+        if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS){
+            root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(-translateAmount, 0.0f, 0.0f));
+            targetPosition.x -= translateAmount;
+            translateAmount += 0.001f;
+        }
+        
+        if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS){
+            root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(0.0f, translateAmount, 0.0f));
+            targetPosition.y += translateAmount;
+            translateAmount += 0.001f;
+        }
+        
+        if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
+            root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(0.0f, -translateAmount, 0.0f));
+            targetPosition.y -= translateAmount;
+            translateAmount += 0.001f;
+        }
+        
         // Controls
         // Move Parent Cat Up and Down, update Child Bone relatively
         if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
-            root.update(-0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root.update(-rotate_angle, glm::vec3(0, 0, 1));
+            
+            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]);
+            
+//            cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
 //            cout << "Child Position = " << child.position.x << " " << child.position.y << " " << child.position.z << endl;
         }
         if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
-            root.update(0.1f, root.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            root.update(rotate_angle, glm::vec3(0, 0, 1));
+            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[2]->ModelMatrixTemp[3]);
+            
+//            cout << "End Effector Position = " << finger1.bones[2]->id << " " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
         }
         if (glfwGetKey( window, GLFW_KEY_P ) == GLFW_PRESS){
-            child.update(-0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            child.update(-rotate_angle, glm::vec3(0, 0, 1));
         }
         if (glfwGetKey( window, GLFW_KEY_L ) == GLFW_PRESS){
-            child.update(0.1f, child.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            child.update(rotate_angle, glm::vec3(0, 0, 1));
         }
         if (glfwGetKey( window, GLFW_KEY_O ) == GLFW_PRESS){
-            child2.update(-0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            child2.update(-rotate_angle, glm::vec3(0, 0, 1));
         }
         if (glfwGetKey( window, GLFW_KEY_K ) == GLFW_PRESS){
-            child2.update(0.1f, child2.ModelMatrix, ProjectionMatrix, ViewMatrix);
+            child2.update(rotate_angle, glm::vec3(0, 0, 1));
         }
+
         if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS && test == true){
-            // Do CCD :P
-            test = false;
-//            while (endPointPosition != targetPosition) {
-                for(int i=finger1.num_bones-1; i>=0; i--) {
-                    
-                    // update position todo - not updating in model matrix for some reason ???
-                    
-                    glm::vec3 currBonePosition = glm::vec3(glm::column(finger1.bones[i]->ModelMatrix, 3).x, glm::column(finger1.bones[i]->ModelMatrix, 3).y, glm::column(finger1.bones[i]->ModelMatrix, 3).z);
-                    
-                    glm::vec3 targetVector = glm::vec3(targetPosition.x - currBonePosition.x, 0.0f, targetPosition.z - currBonePosition.z);
-                    targetVector = glm::normalize(targetVector);
-                    
-                    glm::vec3 outerMostJointVector = glm::vec3(endPointPosition.x - currBonePosition.x, 0.0f, endPointPosition.z - currBonePosition.z);
-                    outerMostJointVector = glm::normalize(outerMostJointVector);
-                    
-                    // extract from the model matrix the forward vector todo maybe?
-                    
-                    cout << "Bone " << i << endl;
-                    cout << "End Point Position " << endPointPosition.x << " " << endPointPosition.z << endl;
-                    cout << "Curr Joint Position " << finger1.bones[i]->position.x << " " << finger1.bones[i]->position.y << " " << finger1.bones[i]->position.z << endl;
-                    cout << "Curr Joint Position from MM " << currBonePosition.x << " " << currBonePosition.y << " "  << currBonePosition.z << endl;
-                    cout << "Target Vector " << targetVector.x << " " << targetVector.y << " " << targetVector.z << endl;
-                    cout << "Outermost joint vector " << outerMostJointVector.x << " " << outerMostJointVector.y << " " << outerMostJointVector.z << endl;
-                    
-                    glm::dot(targetVector, outerMostJointVector);
-                    
-                    float vecLengthProduct = glm::length(targetVector) * glm::length(outerMostJointVector);
-                    float angle = glm::acos(glm::dot(targetVector, outerMostJointVector)/vecLengthProduct);
-                    
-                    endPointPosition.x = currBonePosition.x + 2 * sin(angle) * -1;
-                    endPointPosition.z = currBonePosition.z + 2 * cos(angle);
-                    
-                    cout << "Angle = " << angle << endl;
-                    
-                    finger1.bones[i]->update(angle, finger1.bones[i]->ModelMatrix, ProjectionMatrix, ViewMatrix);
-                    
+
+//            for(int i=finger1.num_bones-2; i>-1 ; i--) {
+            
+                glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]);
+
+                cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
+                
+                glm::vec3 currBonePosition = glm::vec3(finger1.bones[1]->ModelMatrixTemp[3]);
+                
+                glm::vec3 targetVector = glm::vec3(targetPosition.x - currBonePosition.x, targetPosition.y - currBonePosition.y, 0.0f);
+                targetVector = glm::normalize(targetVector);
+                
+                glm::vec3 outerMostJointVector = glm::vec3(endPointPosition.x - currBonePosition.x, endPointPosition.y - currBonePosition.y, 0.0f);
+                outerMostJointVector = glm::normalize(outerMostJointVector);
+            
+                float angle = glm::acos(glm::dot(targetVector, outerMostJointVector));
+            
+                endPointPosition.x = currBonePosition.x + 2 * sin(angle) * -1;
+                endPointPosition.z = currBonePosition.z + 2 * cos(angle);
+                
+                float xd = targetPosition.x - endEffectorBonePosition.x;
+                float yd = targetPosition.y - endEffectorBonePosition.y;
+                float distance = sqrt((xd*xd) + (yd*yd));
+            
+            glm::vec3 distance2 = glm::vec3(endEffectorBonePosition.x - targetPosition.x, endEffectorBonePosition.y - targetPosition.y, 0.0f);
+            
+            if (glm::length(distance2) < 1.0f)
+            {
+                //exit - don't do any rotation
+                //distance is too small for rotation to be numerically stable
+            }
+            
+            //Don't actually need to call normalize for directionA - just doing it to indicate
+            //that this vector must be normalized.
+//            final Vector3 directionA = new Vector3(0, 1, 0).normalize();
+//            final Vector3 directionB = distance.clone().normalize();
+            
+            float rotationAngle = glm::acos(glm::dot(targetVector, outerMostJointVector));
+            
+            if (abs(rotationAngle) < 1.0f)
+            {
+                //exit - don't do any rotation
+                //angle is too small for rotation to be numerically stable
+            }
+            
+//            final Vector3 rotationAxis = directionA.clone().cross(directionB).normalize();
+            glm::vec3 rotationAxis = glm::cross(targetVector, outerMostJointVector);
+            
+            //rotate object about rotationAxis by rotationAngle
+            
+//                cout << "Distance = " << distance << endl;
+                cout << "Angle = " << angle << endl;
+//                cout << "Target Position = " << targetPosition.x << " " << targetPosition.y << endl;
+//                cout << "EndeffectorPosition = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y;
+                if(distance > 1.0f && rotationAngle != 0) {
+//                    for(float j = 0.01f; j<angle; j+=0.01f) {
+                        finger1.bones[1]->update(rotationAngle, rotationAxis);
+//                    }
+                }
+                
                 }
 //            }
-        }
+//        }
+
         if (glfwGetKey( window, GLFW_KEY_N ) == GLFW_PRESS) {
             test = true;
         }
@@ -296,17 +373,17 @@ void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
     }
 }
 
-void initMVP(Finger &finger, float offSetX, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
+void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
     float offSetZ = 2.0f;
     for (int i = 0; i<finger.bones.size(); i++) {
         if (i==0) {
-            finger.bones[i]->position = glm::vec3(offSetX, 0.0f, offSetZ);
+            finger.bones[i]->position = glm::vec3(0.0f, 0.0f, offSetZ);
             finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
-            finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
+            finger.bones[i]->MVP = finger.bones[i]->ModelMatrix  * ViewMatrix * ProjectionMatrix;
         } else {
             finger.bones[i]->position = glm::vec3(0.0f, offSetZ, 0.0f);
             finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
-            finger.bones[i]->MVP = ProjectionMatrix * ViewMatrix * finger.bones[i]->ModelMatrix;
+            finger.bones[i]->MVP = finger.bones[i]->ModelMatrix  * ViewMatrix * ProjectionMatrix;
         }
     }
 }
@@ -316,10 +393,11 @@ void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float delt
 {
     float time = glfwGetTime();
     float timeElapsed = 0.0f;
-    bone.update(sin(time*15)/5, bone.ModelMatrix, ProjectionMatrix, ViewMatrix);
+    bone.update(sin(time*15)/5, glm::vec3(0, 0, 1));
     timeElapsed += deltaTime;
     
 }
+
 
 int initStuff() {
     

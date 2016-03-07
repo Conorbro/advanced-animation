@@ -35,7 +35,7 @@ void Skeleton::querySkeleton() {
 
 void Skeleton::rotateSkeleton(glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
     for(int i=0; i<fingers.size(); i++) {
-        this->fingers[i]->bones[0]->update(0.1f, fingers[i]->bones[0]->ModelMatrix, ProjectionMatrix, ViewMatrix);
+        this->fingers[i]->bones[0]->update(0.1f, glm::vec3(0, 0, 1));
     }
 }
 

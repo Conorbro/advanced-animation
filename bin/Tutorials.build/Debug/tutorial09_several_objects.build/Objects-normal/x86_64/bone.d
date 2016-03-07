@@ -75,9 +75,21 @@ dependencies: \
   /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/integer.hpp \
   /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/detail/func_integer.hpp \
   /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/detail/func_integer.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/quaternion.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/../gtc/constants.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/constants.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/quaternion.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/quaternion.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/../gtx/norm.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/norm.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/quaternion.inl \
   /Users/conorbroderick/Opengl/OpenglTutorials/external/glew-1.13.0/include/GL/glew.h \
   /Users/conorbroderick/Opengl/OpenglTutorials/external/glfw-3.1.2/include/GLFW/glfw3.h \
   /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/matrix_transform.hpp \
-  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/../gtc/constants.hpp \
-  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/constants.inl \
-  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/matrix_transform.inl
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/matrix_transform.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/euler_angles.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/euler_angles.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/compatibility.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtx/compatibility.inl \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/matrix_access.hpp \
+  /Users/conorbroderick/Opengl/OpenglTutorials/external/glm-0.9.7.1/glm/gtc/matrix_access.inl
