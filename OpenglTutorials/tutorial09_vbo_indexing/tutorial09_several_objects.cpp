@@ -222,6 +222,7 @@ int main( void )
             targetPosition.x += translateAmount;
             cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
+            rotatee = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS){
@@ -229,6 +230,7 @@ int main( void )
             targetPosition.x -= translateAmount;
             cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
+                        rotatee = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS){
@@ -236,6 +238,7 @@ int main( void )
             targetPosition.y += translateAmount;
             cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
+                        rotatee = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
@@ -243,6 +246,7 @@ int main( void )
             targetPosition.y -= translateAmount;
             cout << "target Position = " << targetPosition.x << " " << targetPosition.y << endl;
             translateAmount += 0.001f;
+                        rotatee = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_E ) == GLFW_PRESS){
@@ -250,6 +254,7 @@ int main( void )
             targetPosition.z += translateAmount;
             cout << "target Position = " << targetPosition.x << " " << targetPosition.y << " " << targetPosition.z << endl;
             translateAmount += 0.001f;
+                        rotatee = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_D ) == GLFW_PRESS){
@@ -257,27 +262,37 @@ int main( void )
             targetPosition.z -= translateAmount;
             cout << "target Position = " << targetPosition.x << " " << targetPosition.y << " " << targetPosition.z << endl;
             translateAmount += 0.001f;
+                        rotatee = true;
         }
         
 //        if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS && test == true){
+        
+        // IK - CCD
+        if(rotatee) {
             for(int i=finger1.num_bones-1; i>=0 ; i--) {
             
+                // Get end effector position from Model Matrix of End Effector Bone
                 glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
-                cout << "Number of bones = " << finger1.bones.size() << endl;
 
 //                cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
                 
+                // Get current bone's pivot position
                 glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
                 
+                // Calculate the target vector from subtracting the current bone position from the target position
                 glm::vec3 targetVector = glm::vec3(targetPosition.x - currBonePosition.x, targetPosition.y - currBonePosition.y, targetPosition.z - currBonePosition.z);
                 targetVector = glm::normalize(targetVector);
                 
+                // Calculate the end effector vector from substracting the current bone position from the end effector's position
                 glm::vec3 endEffector = glm::vec3(endEffectorBonePosition.x - currBonePosition.x, endEffectorBonePosition.y - currBonePosition.y, endEffectorBonePosition.z - currBonePosition.z);
                 endEffector = glm::normalize(endEffector);
             
+                // Calculate angle of rotation from dot product of these two
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
 //                cout << "Distance = " << glm::length(distance2) << endl;
 //                cout << "Rotation Angle = " << rotationAngle << endl;
+                
+                // if angle between a certain threshold, stop rotating!
             if (rotationAngle < 0.3f)
             {
                 //exit - don't do any rotation
@@ -286,9 +301,14 @@ int main( void )
             } else {
                 rotatee = true;
             }
+                
+                if (targetPosition == endEffectorBonePosition) {
+                    rotatee = false;
+                }
             
+            // Get axis of rotation from cross product of targetVector and end effector vector
             glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
-//            rotationAxis = glm::normalize(rotationAxis);
+
 //                cout << "Rotation Axis = " << glm::to_string(rotationAxis) << endl;
             //rotate object about rotationAxis by rotationAngle
             
@@ -304,6 +324,7 @@ int main( void )
                 }
                 
                 }
+        }
 //        }
 //            }
 //        }
