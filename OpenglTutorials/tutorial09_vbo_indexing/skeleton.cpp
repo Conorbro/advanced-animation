@@ -7,7 +7,7 @@
 //
 #include <iostream>
 #include "skeleton.hpp"
-#include "bone.hpp"
+//#include "bone.hpp"
 
 //Graphics Imports
 #include <common/shader.hpp>
@@ -19,8 +19,8 @@
 // classes example
 using namespace std;
 
-Skeleton::Skeleton(Bone root_bone) {
-    root = root_bone;
+Skeleton::Skeleton() {
+//    root = root_bone;
 }
 
 void Skeleton::addFinger(Finger &f) {

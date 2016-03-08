@@ -25,7 +25,7 @@ using namespace std;
 
 Bone::Bone()
 {
-//    printf("Object is being created\n");
+    printf("Bone created\n");
 }
 
 void Bone::update(float rotation, glm::vec3 rotationAxis) {
@@ -35,10 +35,6 @@ void Bone::update(float rotation, glm::vec3 rotationAxis) {
     if(hasParent()) {
         MVP = parent->MVP * ModelMatrix;
         ModelMatrixTemp = parent->ModelMatrix * ModelMatrix;
-        
-//        glm::vec3 currBonePosition = glm::vec3(ModelMatrixTemp[3]);
-//          cout << "Curr Joint Position from MM Bone" << this->id << " " << currBonePosition[0] << " " << currBonePosition[1] << " "  << currBonePosition[2] << endl;
-    
     }
     
     // If the bone has a child, update the child with the current bone's mvp
@@ -53,9 +49,6 @@ void Bone::updateChild(glm::mat4 ParentMVP, glm::mat4 ParentModelMatrix) {
     child->MVP = ParentMVP*child->ModelMatrix;
     
     child->ModelMatrixTemp = ParentModelMatrix * child->ModelMatrix;
-
-//    glm::vec3 currBonePosition = glm::vec3(child->ModelMatrixTemp[3]);
-//    cout << "Curr Joint Position from MM Child" << child->id << " " << currBonePosition[0] << " " << currBonePosition[1] << " "  << currBonePosition[2] << endl;
     
     if(child->hasChild()) {
         child->updateChild(child->MVP, child->ModelMatrixTemp);
@@ -63,22 +56,22 @@ void Bone::updateChild(glm::mat4 ParentMVP, glm::mat4 ParentModelMatrix) {
 }
 
 bool Bone::hasChild() {
-    if (this->child) {
+    if (child) {
         return true;
     } else return false;
 }
 
 bool Bone::hasParent() {
-    if (this->parent) {
+    if (parent) {
         return true;
     } else return false;
 }
 
 void Bone::addChild(Bone *bone) {
-    this->child = bone;
+    child = bone;
     childRefs.push_back(bone);
 }
 
 void Bone::addParent(Bone *bone) {
-    this->parent = bone;
+    parent = bone;
 }

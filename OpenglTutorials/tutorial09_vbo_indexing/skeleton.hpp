@@ -22,7 +22,7 @@ class Skeleton {
 public:
     int num_fingers;
     Bone root;
-    Skeleton(Bone root_bone);
+    Skeleton();
     std::vector<Finger*> fingers;
     void addFinger(Finger &finger);
     void querySkeleton();

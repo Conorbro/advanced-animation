@@ -7,14 +7,9 @@
 // Include GLEW
 #include <GL/glew.h>
 
-#include <GLUT/glut.h>
-
 // Include GLFW
 #include <glfw3.h>
 GLFWwindow* window;
-
-// Include Eigen
-#include <eigen3/Eigen/Jacobi>
 
 // Include GLM
 #include <glm/glm.hpp>
@@ -24,6 +19,7 @@ GLFWwindow* window;
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/norm.hpp>
 #include <glm/gtc/matrix_access.hpp>
+#include "glm/ext.hpp"
 using namespace glm;
 
 #include <common/shader.hpp>
@@ -46,16 +42,14 @@ void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float delt
 GLuint MatrixID, ViewMatrixID, ModelMatrixID;
 GLuint vertexbuffer, uvbuffer, normalbuffer, elementbuffer;
 std::vector<unsigned short> indices;
-Bone wrist;
-Skeleton skeleton(wrist);
 
-// Would be preferable not to have to hard code this - mouse click would be nice :)
+Skeleton skeleton;
+
 glm::vec3 targetPosition = glm::vec3(6.0f, 6.0f, 0.0f);
 glm::vec3 endPointPosition;
 glm::vec3 currJointPosition;
 float angle;
 float rotate_angle = 0.01f;
-bool test = true;
 float translateAmount = 0.0f;
 bool rotatee = true;
 
@@ -69,8 +63,8 @@ int main( void )
     Bone child;
     Bone child2;
     Bone endEffectorBone;
-    Finger finger1(root);
-    
+
+    Finger finger1(root); // root added as bone to finger on init of finger
     finger1.addBone(child);
     finger1.addBone(child2);
     finger1.addBone(endEffectorBone);
@@ -155,7 +149,6 @@ int main( void )
     glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f);
 
     position = glm::vec3(2.0f, 0.0f, 0.0f);
-    endPointPosition = glm::vec3(child2.position.x + 1.0f, child2.position.y + 1.0f, 0.0f); // COMPLETE TEMPORARY GUESS WORK
     double xpos, ypos;
     // GAME LOOP //
     
@@ -218,11 +211,11 @@ int main( void )
 		glfwSwapBuffers(window);
 		glfwPollEvents();
         
-//        // Get cursor coordinates (currently just relative to window, I think...)
-//        if (glfwGetKey( window, GLFW_KEY_SPACE ) == GLFW_PRESS){
-//            targetPosition = glm::vec3(xpos, 0.0f, ypos);
-//            cout << targetPosition.x << " " << targetPosition.z << endl;
-//        }
+        // Controls
+        // Move Parent Cat Up and Down, update Child Bone relatively
+        if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
+            root.update(0.0f, glm::vec3(0, 0, 1));
+        }
         
         if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
             root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(translateAmount, 0.0f, 0.0f));
@@ -252,70 +245,40 @@ int main( void )
             translateAmount += 0.001f;
         }
         
-        // Controls
-        // Move Parent Cat Up and Down, update Child Bone relatively
-        if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
-            root.update(-rotate_angle, glm::vec3(0, 0, 1));
-            
-            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]);
-            
-//            cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
-//            cout << "Child Position = " << child.position.x << " " << child.position.y << " " << child.position.z << endl;
+        if (glfwGetKey( window, GLFW_KEY_E ) == GLFW_PRESS){
+            root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(0.0f, 0.0f, translateAmount));
+            targetPosition.z += translateAmount;
+            cout << "target Position = " << targetPosition.x << " " << targetPosition.y << " " << targetPosition.z << endl;
+            translateAmount += 0.001f;
         }
-        if (glfwGetKey( window, GLFW_KEY_S ) == GLFW_PRESS){
-            root.update(rotate_angle, glm::vec3(0, 0, 1));
-            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[2]->ModelMatrixTemp[3]);
-            
-//            cout << "End Effector Position = " << finger1.bones[2]->id << " " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
+        
+        if (glfwGetKey( window, GLFW_KEY_D ) == GLFW_PRESS){
+            root2.ModelMatrix = glm::translate(root2.ModelMatrix, glm::vec3(0.0f, 0.0f, -translateAmount));
+            targetPosition.z -= translateAmount;
+            cout << "target Position = " << targetPosition.x << " " << targetPosition.y << " " << targetPosition.z << endl;
+            translateAmount += 0.001f;
         }
-        if (glfwGetKey( window, GLFW_KEY_P ) == GLFW_PRESS){
-            child.update(-rotate_angle, glm::vec3(0, 0, 1));
-        }
-        if (glfwGetKey( window, GLFW_KEY_L ) == GLFW_PRESS){
-            child.update(rotate_angle, glm::vec3(0, 0, 1));
-        }
-        if (glfwGetKey( window, GLFW_KEY_O ) == GLFW_PRESS){
-            child2.update(-rotate_angle, glm::vec3(0, 0, 1));
-        }
-        if (glfwGetKey( window, GLFW_KEY_K ) == GLFW_PRESS){
-            child2.update(rotate_angle, glm::vec3(0, 0, 1));
-        }
-
-        if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS && test == true){
-
-            for(int i=finger1.num_bones-2; i>-1 ; i--) {
+        
+//        if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS && test == true){
+            for(int i=finger1.num_bones-1; i>=0 ; i--) {
             
                 glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
+                cout << "Number of bones = " << finger1.bones.size() << endl;
 
-                cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
+//                cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
                 
                 glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
                 
-                glm::vec3 targetVector = glm::vec3(targetPosition.x - currBonePosition.x, targetPosition.y - currBonePosition.y, 0.0f);
+                glm::vec3 targetVector = glm::vec3(targetPosition.x - currBonePosition.x, targetPosition.y - currBonePosition.y, targetPosition.z - currBonePosition.z);
                 targetVector = glm::normalize(targetVector);
                 
-                glm::vec3 outerMostJointVector = glm::vec3(endEffectorBonePosition.x - currBonePosition.x, endEffectorBonePosition.y - currBonePosition.y, 0.0f);
-                outerMostJointVector = glm::normalize(outerMostJointVector);
+                glm::vec3 endEffector = glm::vec3(endEffectorBonePosition.x - currBonePosition.x, endEffectorBonePosition.y - currBonePosition.y, endEffectorBonePosition.z - currBonePosition.z);
+                endEffector = glm::normalize(endEffector);
             
-            glm::vec3 distance2 = glm::vec3(endEffectorBonePosition.x - targetPosition.x, endEffectorBonePosition.y - targetPosition.y, 0.0f);
-            
-            if (glm::length(distance2) < 0.1f)
-            {
-                //exit - don't do any rotation
-                //distance is too small for rotation to be numerically stable
-                rotatee = false;
-            } else {
-                rotatee = true;
-            }
-            
-            //Don't actually need to call normalize for directionA - just doing it to indicate
-            //that this vector must be normalized.
-//            final Vector3 directionA = new Vector3(0, 1, 0).normalize();
-//            final Vector3 directionB = distance.clone().normalize();
-            
-            float rotationAngle = glm::acos(glm::dot(targetVector, outerMostJointVector));
-            
-            if (abs(rotationAngle) < 0.1f)
+            float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
+//                cout << "Distance = " << glm::length(distance2) << endl;
+//                cout << "Rotation Angle = " << rotationAngle << endl;
+            if (rotationAngle < 0.3f)
             {
                 //exit - don't do any rotation
                 //angle is too small for rotation to be numerically stable
@@ -324,30 +287,26 @@ int main( void )
                 rotatee = true;
             }
             
-//            final Vector3 rotationAxis = directionA.clone().cross(directionB).normalize();
-            glm::vec3 rotationAxis = glm::cross(targetVector, outerMostJointVector);
-            
+            glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
+//            rotationAxis = glm::normalize(rotationAxis);
+//                cout << "Rotation Axis = " << glm::to_string(rotationAxis) << endl;
             //rotate object about rotationAxis by rotationAngle
             
 //                cout << "Distance = " << distance << endl;
-                cout << "Angle = " << rotationAngle << endl;
+                cout << "Angle = " << rotationAngle << " Bone " << i << endl;
 //                cout << "Target Position = " << targetPosition.x << " " << targetPosition.y << endl;
 //                cout << "EndeffectorPosition = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y;
                 if(rotatee) {
                     for(float j = 0.01f; j<rotationAngle; j+=0.01f) {
                         finger1.bones[i]->update(-0.0001f, rotationAxis);
+                        cout << "Angle = " << rotationAngle << " Bone " << i << endl;
                     }
                 }
                 
                 }
-        }
+//        }
 //            }
 //        }
-
-        if (glfwGetKey( window, GLFW_KEY_N ) == GLFW_PRESS) {
-            test = true;
-        }
-
 	} // Check if the ESC key was pressed or the window was closed
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		   glfwWindowShouldClose(window) == 0 );
@@ -380,7 +339,7 @@ void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
     float offSetZ = 2.0f;
     for (int i = 0; i<finger.bones.size(); i++) {
         if (i==0) {
-            finger.bones[i]->position = glm::vec3(0.0f, 0.0f, offSetZ);
+            finger.bones[i]->position = glm::vec3(0.0f, 0.0f, 0.0f);
             finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
             finger.bones[i]->MVP = finger.bones[i]->ModelMatrix  * ViewMatrix * ProjectionMatrix;
         } else {
@@ -390,17 +349,6 @@ void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
         }
     }
 }
-
-
-void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float deltaTime)
-{
-    float time = glfwGetTime();
-    float timeElapsed = 0.0f;
-    bone.update(sin(time*15)/5, glm::vec3(0, 0, 1));
-    timeElapsed += deltaTime;
-    
-}
-
 
 int initStuff() {
     
@@ -441,10 +389,6 @@ int initStuff() {
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
     // Hide the mouse and enable unlimited movement
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    
-    // Set the mouse at the center of the screen
-//    glfwPollEvents();
-//    glfwSetCursorPos(window, 1024/2, 768/2);
     
     // Dark blue background
     glClearColor(0.0f, 0.0f, 0.4f, 0.0f);

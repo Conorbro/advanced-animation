@@ -28,6 +28,7 @@ Finger::Finger(Bone root_bone) {
 
 void Finger::addBone(Bone &b) {
     num_bones += 1;
+    cout << "Number of bones = " << num_bones << endl;
     b.id = num_bones;
     if (num_bones <= 1){
         b.parentRef = num_bones - 1; // assign -1 as parent ref for root bone
