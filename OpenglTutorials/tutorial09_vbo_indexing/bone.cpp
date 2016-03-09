@@ -32,9 +32,10 @@ void Bone::update(float rotation, glm::vec3 rotationAxis) {
 
     // Rotate bone's model matrix
     ModelMatrix = glm::rotate(ModelMatrix, rotation, rotationAxis);
+
     if(hasParent()) {
         MVP = parent->MVP * ModelMatrix;
-        ModelMatrixTemp = parent->ModelMatrix * ModelMatrix;
+//        ModelMatrixTemp = parent->ModelMatrix * ModelMatrix;
     }
     
     // If the bone has a child, update the child with the current bone's mvp
