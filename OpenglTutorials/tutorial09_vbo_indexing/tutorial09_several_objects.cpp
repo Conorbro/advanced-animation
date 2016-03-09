@@ -38,6 +38,7 @@ int initStuff();
 void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
 void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
 void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float deltaTime);
+void calcIK(Finger finger1, Bone root2);
 
 GLuint MatrixID, ViewMatrixID, ModelMatrixID;
 GLuint vertexbuffer, uvbuffer, normalbuffer, elementbuffer;
@@ -158,7 +159,6 @@ int main( void )
 		nbFrames++;
 		if ( currentTime - lastTime >= 1.0 ){ // If last prinf() was more than 1sec ago
 			// printf and reset
-//			printf("%f ms/frame\n", 1000.0/double(nbFrames));
 			nbFrames = 0;
 			lastTime += 1.0;
 		}
@@ -194,7 +194,6 @@ int main( void )
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, Texture);
-		// Set our "myTextureSampler" sampler to user Texture Unit 0
 		glUniform1i(TextureID, 0);
         
         // Render Fingers
@@ -254,81 +253,15 @@ int main( void )
             rotatee = true;
         }
         
-        if (glfwGetKey( window, GLFW_KEY_N ) == GLFW_PRESS ){
-            initMVP(finger1, ProjectionMatrix, ViewMatrix);
-        }
+//        if (glfwGetKey( window, GLFW_KEY_N ) == GLFW_PRESS ){
+//            initMVP(finger1, ProjectionMatrix, ViewMatrix);
+//        }
         
-        
-        
-        // IK - CCD
         if(rotatee) {
-            for(int i=finger1.num_bones-1; i>=0 ; i--) {
-                // Get end effector position from Model Matrix of End Effector Bone
-                glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
-                targetPosition = glm::vec3(root2.ModelMatrix[3]);
-
-//                cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
-                
-                
-                // Get current bone's pivot position
-                glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
-                
-//                cout << "Current Bone Position = " << i << " " << currBonePosition.x << " " << currBonePosition.y << " " << currBonePosition.z << endl;
-                // Calculate the target vector from subtracting the current bone position from the target position
-                
-                glm::vec3 targetVector = glm::vec3(glm::vec3 (targetPosition.x, targetPosition.y, targetPosition.z) - glm::vec3(currBonePosition.x, currBonePosition.y, currBonePosition.z));
-                
-                targetVector = glm::normalize(targetVector);
-                
-                // Calculate the end effector vector from substracting the current bone position from the end effector's position
-                glm::vec3 endEffector = glm::vec3(glm::vec3(endEffectorBonePosition.x, endEffectorBonePosition.y, endEffectorBonePosition.z) - glm::vec3(currBonePosition.x, currBonePosition.y, currBonePosition.z));
-                
-                endEffector = glm::normalize(endEffector);
-            
-                // Calculate angle of rotation from dot product of these two
-            float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
-//                cout << "Distance = " << glm::length(distance2) << endl;
-//                cout << "Rotation Angle = " << rotationAngle << endl;
-                
-                // if angle between a certain threshold, stop rotating!
-                if (rotationAngle < 0.3f)
-            {
-                //exit - don't do any rotation
-                //angle is too small for rotation to be numerically stable
-//                cout << "End Effector Position = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y << " " << endEffectorBonePosition.z << endl;
-//                cout << "target Position = " << targetPosition.x << " " << targetPosition.y << " " << targetPosition.z << endl;
-                rotatee = false;
-            } else {
-                rotatee = true;
-            }
-                
-                if (targetPosition == endEffectorBonePosition) {
-                    rotatee = false;
-                }
-            
-            // Get axis of rotation from cross product of targetVector and end effector vector
-            glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
-
-//                cout << "Rotation Axis = " << glm::to_string(rotationAxis) << endl;
-            //rotate object about rotationAxis by rotationAngle
-            
-//                cout << "Distance = " << distance << endl;
-//                cout << "Angle = " << rotationAngle << " Bone " << i << endl;
-//                cout << "Target Position = " << targetPosition.x << " " << targetPosition.y << endl;
-//                cout << "EndeffectorPosition = " << endEffectorBonePosition.x << " " << endEffectorBonePosition.y;
-                if(rotatee) {
-                    for(float j = 0.01f; j<abs(rotationAngle); j+=0.01f) {
-                        finger1.bones[i]->update(-0.0001f, rotationAxis);
-//                        cout << "Angle = " << rotationAngle << " Bone " << i << endl;
-                    }
-                }
-                
-                }
+            calcIK(finger1, root2);
         }
-//        }
-//            }
-//        }
-	} // Check if the ESC key was pressed or the window was closed
+        
+       	} // Check if the ESC key was pressed or the window was closed
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		   glfwWindowShouldClose(window) == 0 );
 
@@ -346,6 +279,61 @@ int main( void )
 	glfwTerminate();
 
 	return 0;
+}
+
+void calcIK(Finger finger1, Bone root2) {
+    
+    // IK - CCD
+        for(int i=finger1.num_bones-1; i>=0 ; i--) {
+            // Get end effector position from Model Matrix of End Effector Bone
+            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
+            targetPosition = glm::vec3(root2.ModelMatrix[3]);
+            
+            // Get current bone's pivot position
+            glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
+            
+            glm::vec3 targetVector = glm::vec3(glm::vec3 (targetPosition.x, targetPosition.y, targetPosition.z) - glm::vec3(currBonePosition.x, currBonePosition.y, currBonePosition.z));
+            
+            targetVector = glm::normalize(targetVector);
+            
+            // Calculate the end effector vector from substracting the current bone position from the end effector's position
+            glm::vec3 endEffector = glm::vec3(glm::vec3(endEffectorBonePosition.x, endEffectorBonePosition.y, endEffectorBonePosition.z) - glm::vec3(currBonePosition.x, currBonePosition.y, currBonePosition.z));
+            
+            endEffector = glm::normalize(endEffector);
+            cout << glm::to_string(endEffector) << endl;
+            cout << glm::to_string(targetVector) << endl;
+            
+            // Calculate angle of rotation from dot product of these two
+            float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
+            
+            // if angle between a certain threshold, stop rotating!
+            if (rotationAngle > 1.0f) {
+                rotationAngle = 0.4f;
+            }
+                                if (glm::dot(targetVector, endEffector) > 1.0f)
+            {
+                
+                rotatee = false;
+            } else {
+                rotatee = true;
+            }
+            
+            if (targetPosition == endEffectorBonePosition) {
+                rotatee = false;
+            }
+            
+            // Get axis of rotation from cross product of targetVector and end effector vector
+            glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
+            // check if two lines are equal
+            
+            
+            if(rotatee) {
+//                for(float j = 0.01f; j<abs(rotationAngle); j+=0.01f) {
+                    finger1.bones[i]->update(rotationAngle, rotationAxis);
+//                }
+            }
+            
+        }
 }
 
 void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
