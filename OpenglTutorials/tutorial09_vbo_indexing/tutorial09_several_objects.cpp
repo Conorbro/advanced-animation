@@ -52,7 +52,7 @@ glm::vec3 currJointPosition;
 float angle;
 float rotate_angle = 0.01f;
 float translateAmount = 0.1f;
-bool rotatee = false;
+bool targetFound = false;
 
 int main( void )
 {
@@ -63,20 +63,24 @@ int main( void )
     Bone root2;
     Bone child;
     Bone child2;
+    Bone child3;
     Bone endEffectorBone;
 
     Finger finger1(root); // root added as bone to finger on init of finger
     finger1.addBone(root);
     finger1.addBone(child);
     finger1.addBone(child2);
+    finger1.addBone(child3);
     finger1.addBone(endEffectorBone);
     
     root.addChild(&child);
     child.addChild(&child2);
-    child2.addChild(&endEffectorBone);
+    child2.addChild(&child3);
+    child3.addChild(&endEffectorBone);
     
     child.addParent(&root);
     child2.addParent(&child);
+    child3.addParent(&child2);
     endEffectorBone.addParent(&child2);
 
     skeleton.addFinger(finger1);
@@ -217,44 +221,44 @@ int main( void )
         if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
             targetPosition.x += translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
-            rotatee = true;
+            targetFound = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS){
             targetPosition.x -= translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
-            rotatee = true;
+            targetFound = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS){
             targetPosition.y += translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
-            rotatee = true;
+            targetFound = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
             targetPosition.y -= translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
-            rotatee = true;
+            targetFound = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_D ) == GLFW_PRESS){
           targetPosition.z += translateAmount;
           root2.ModelMatrix = glm::translate(mat4(), targetPosition);
-          rotatee = true;
+          targetFound = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_E ) == GLFW_PRESS){
             targetPosition.z -= translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
-            rotatee = true;
+            targetFound = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS ){
-            rotatee = true;
+            targetFound = true;
         }
         
-        if(rotatee) {
+        if(targetFound) {
             calcIK(finger1, root2);
         }
         
@@ -281,10 +285,10 @@ int main( void )
 void calcIK(Finger finger1, Bone root2) {
     
     // IK - CCD
-        for(int i=finger1.num_bones-2; i>=1 ; i--) {
+        for(int i=finger1.bones.size()-3; i>=1 ; i--) {
             
             // Get end effector position from Model Matrix of End Effector Bone
-            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
+            glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[4]->ModelMatrixTemp[3]); //
             targetPosition = glm::vec3(root2.ModelMatrix[3]);
         
             // Get current bone's pivot position
@@ -297,24 +301,32 @@ void calcIK(Finger finger1, Bone root2) {
             
             // Calculate angle of rotation from dot product of these two
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
+            cout << "Rotation Angle " << rotationAngle << endl;
+            float distance = glm::distance(endEffectorBonePosition, targetPosition);
             
             // if angle between a certain threshold, stop rotating!
-            if (glm::dot(targetVector, endEffector) > 1.0f)
-            {
-                rotatee = false;
-            } else {
-                rotatee = true;
+            if (glm::dot(targetVector, endEffector) > 1.0f) {
+                targetFound = false;
+            }
+            else if (distance < 0.1f) {
+                targetFound = false;
+            }
+            else if (targetPosition == endEffectorBonePosition) {
+                targetFound = false;
+            }
+            else {
+                targetFound = true;
             }
             
-            if (targetPosition == endEffectorBonePosition) {
-                rotatee = false;
-            }
             
             // Get axis of rotation from cross product of targetVector and end effector vector
             glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
+            rotationAxis = glm::normalize(rotationAxis);
             // check if two lines are equal
             
-            if(rotatee) {
+            cout << "Rotation Axis = " << glm::to_string(rotationAxis) << endl;
+            
+            if(targetFound) {
                     finger1.bones[i]->update(rotationAngle, rotationAxis);
             }
             
@@ -361,7 +373,7 @@ int initStuff() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     // Open a window and create its OpenGL context
-    window = glfwCreateWindow( 1024, 768, "Hierarchical Hand Model", NULL, NULL);
+    window = glfwCreateWindow( 1024, 768, "Inverse Kinematics - Cyclid Coordinate Descent", NULL, NULL);
     if( window == NULL ){
         fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
         getchar();
