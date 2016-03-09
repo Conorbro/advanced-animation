@@ -22,7 +22,6 @@ using namespace std;
 Finger::Finger(Bone root_bone) {
     num_bones = 0;
     root = root_bone;
-    addBone(root);
     root.id = num_bones;
 }
 

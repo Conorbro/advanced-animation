@@ -46,7 +46,7 @@ std::vector<unsigned short> indices;
 
 Skeleton skeleton;
 
-glm::vec3 targetPosition = glm::vec3(6.0f, 6.0f, 0.0f);
+glm::vec3 targetPosition = glm::vec3(6.0f, 6.0f, -0.5f);
 glm::vec3 endPointPosition;
 glm::vec3 currJointPosition;
 float angle;
@@ -66,6 +66,7 @@ int main( void )
     Bone endEffectorBone;
 
     Finger finger1(root); // root added as bone to finger on init of finger
+    finger1.addBone(root);
     finger1.addBone(child);
     finger1.addBone(child2);
     finger1.addBone(endEffectorBone);
@@ -284,11 +285,11 @@ int main( void )
 void calcIK(Finger finger1, Bone root2) {
     
     // IK - CCD
-        for(int i=finger1.num_bones-1; i>=0 ; i--) {
+        for(int i=finger1.num_bones-2; i>=1 ; i--) {
             // Get end effector position from Model Matrix of End Effector Bone
             glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
             targetPosition = glm::vec3(root2.ModelMatrix[3]);
-            
+            cout << "bone id = " << finger1.bones[i]->id << endl;
             // Get current bone's pivot position
             glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
             
@@ -307,10 +308,7 @@ void calcIK(Finger finger1, Bone root2) {
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
             
             // if angle between a certain threshold, stop rotating!
-            if (rotationAngle > 1.0f) {
-                rotationAngle = 0.4f;
-            }
-                                if (glm::dot(targetVector, endEffector) > 1.0f)
+            if (glm::dot(targetVector, endEffector) > 1.0f)
             {
                 
                 rotatee = false;
@@ -326,11 +324,8 @@ void calcIK(Finger finger1, Bone root2) {
             glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
             // check if two lines are equal
             
-            
             if(rotatee) {
-//                for(float j = 0.01f; j<abs(rotationAngle); j+=0.01f) {
                     finger1.bones[i]->update(rotationAngle, rotationAxis);
-//                }
             }
             
         }
