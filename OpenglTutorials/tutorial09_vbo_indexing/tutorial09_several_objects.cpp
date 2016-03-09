@@ -96,7 +96,7 @@ int main( void )
 	ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Load the texture
-	GLuint Texture = loadDDS("uvmap.DDS");
+	GLuint Texture = loadDDS("texture2.DDS");
 	
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
@@ -105,7 +105,7 @@ int main( void )
 	std::vector<glm::vec3> vertices;
 	std::vector<glm::vec2> uvs;
 	std::vector<glm::vec3> normals;
-	loadOBJ("cube.obj", vertices, uvs, normals);
+	loadOBJ("sphere.obj", vertices, uvs, normals);
 
 	std::vector<glm::vec3> indexed_vertices;
 	std::vector<glm::vec2> indexed_uvs;
@@ -254,10 +254,6 @@ int main( void )
             rotatee = true;
         }
         
-//        if (glfwGetKey( window, GLFW_KEY_N ) == GLFW_PRESS ){
-//            initMVP(finger1, ProjectionMatrix, ViewMatrix);
-//        }
-        
         if(rotatee) {
             calcIK(finger1, root2);
         }
@@ -286,23 +282,18 @@ void calcIK(Finger finger1, Bone root2) {
     
     // IK - CCD
         for(int i=finger1.num_bones-2; i>=1 ; i--) {
+            
             // Get end effector position from Model Matrix of End Effector Bone
             glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[3]->ModelMatrixTemp[3]); //
             targetPosition = glm::vec3(root2.ModelMatrix[3]);
-            cout << "bone id = " << finger1.bones[i]->id << endl;
+        
             // Get current bone's pivot position
             glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
             
-            glm::vec3 targetVector = glm::vec3(glm::vec3 (targetPosition.x, targetPosition.y, targetPosition.z) - glm::vec3(currBonePosition.x, currBonePosition.y, currBonePosition.z));
-            
-            targetVector = glm::normalize(targetVector);
-            
-            // Calculate the end effector vector from substracting the current bone position from the end effector's position
-            glm::vec3 endEffector = glm::vec3(glm::vec3(endEffectorBonePosition.x, endEffectorBonePosition.y, endEffectorBonePosition.z) - glm::vec3(currBonePosition.x, currBonePosition.y, currBonePosition.z));
-            
+            glm::vec3 targetVector = targetPosition - currBonePosition;
+            glm::vec3 endEffector = endEffectorBonePosition - currBonePosition;
             endEffector = glm::normalize(endEffector);
-            cout << glm::to_string(endEffector) << endl;
-            cout << glm::to_string(targetVector) << endl;
+            targetVector = glm::normalize(targetVector);
             
             // Calculate angle of rotation from dot product of these two
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
@@ -310,7 +301,6 @@ void calcIK(Finger finger1, Bone root2) {
             // if angle between a certain threshold, stop rotating!
             if (glm::dot(targetVector, endEffector) > 1.0f)
             {
-                
                 rotatee = false;
             } else {
                 rotatee = true;
