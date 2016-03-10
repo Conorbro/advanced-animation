@@ -39,7 +39,7 @@ void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
 void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
 void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float deltaTime);
 void calcIK(Finger finger1, Bone root2);
-
+glm::vec3 curve(float t, glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3);
 GLuint MatrixID, ViewMatrixID, ModelMatrixID;
 GLuint vertexbuffer, uvbuffer, normalbuffer, elementbuffer;
 std::vector<unsigned short> indices;
@@ -53,6 +53,7 @@ float angle;
 float rotate_angle = 0.01f;
 float translateAmount = 0.1f;
 bool targetFound = false;
+bool followCurve = false;
 
 int main( void )
 {
@@ -100,7 +101,7 @@ int main( void )
 	ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Load the texture
-	GLuint Texture = loadDDS("texture2.DDS");
+	GLuint Texture = loadDDS("red.DDS");
 	
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
@@ -258,11 +259,32 @@ int main( void )
             targetFound = true;
         }
         
+        
+        
+        if (glfwGetKey( window, GLFW_KEY_B ) == GLFW_PRESS ){
+            followCurve = !followCurve;
+        }
+        
+        if(followCurve) {
+            float t = glm::mod( (float)currentTime, 5.0f ) / (5.0f);
+            glm::vec3 a = glm::vec3(1.0f, 9.0f, 1.0f);
+            glm::vec3 b = glm::vec3(1.0f, 9.0f, 1.0f);
+            glm::vec3 c = glm::vec3(1.0f, 9.0f, 1.0f);
+            glm::vec3 d = glm::vec3(9.0f, 9.0f, 1.0f);
+            targetPosition = curve(t, a, b, c, d);
+            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            targetFound = true;
+            cout << "t = " << t << endl;
+            cout << "Target Pos = " << glm::to_string(targetPosition) << endl;
+        }
+        
         if(targetFound) {
             calcIK(finger1, root2);
         }
         
-       	} // Check if the ESC key was pressed or the window was closed
+        
+       	
+    } // Check if the ESC key was pressed or the window was closed
 	while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
 		   glfwWindowShouldClose(window) == 0 );
 
@@ -301,7 +323,7 @@ void calcIK(Finger finger1, Bone root2) {
             
             // Calculate angle of rotation from dot product of these two
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
-            cout << "Rotation Angle " << rotationAngle << endl;
+//            cout << "Rotation Angle " << rotationAngle << endl;
             float distance = glm::distance(endEffectorBonePosition, targetPosition);
             
             // if angle between a certain threshold, stop rotating!
@@ -322,15 +344,33 @@ void calcIK(Finger finger1, Bone root2) {
             // Get axis of rotation from cross product of targetVector and end effector vector
             glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
             rotationAxis = glm::normalize(rotationAxis);
+//            rotationAxis = glm::vec3(glm::vec3(glm::inverse((finger1.bones[i]->parent->position)*(finger1.bones[i]->position))) * rotationAxis);
+        
             // check if two lines are equal
             
-            cout << "Rotation Axis = " << glm::to_string(rotationAxis) << endl;
+//            cout << "Rotation Axis = " << glm::to_string(rotationAxis) << endl;
             
             if(targetFound) {
                     finger1.bones[i]->update(rotationAngle, rotationAxis);
             }
             
         }
+}
+
+glm::vec3 curve(float t, glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
+    
+    float u = 1-t;
+    float tt = t*t;
+    float uu = u*u;
+    float uuu = uu * u;
+    float ttt = tt * t;
+    
+    glm::vec3 p = uuu * p0; //first term
+    p += 3 * uu * t * p1; //second term
+    p += 3 * u * tt * p2; //third term
+    p += ttt * p3; //fourth term
+    
+    return p;
 }
 
 void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
