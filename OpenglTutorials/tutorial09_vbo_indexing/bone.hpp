@@ -40,6 +40,7 @@ public:
     Bone* parent = NULL;
     
     void addChild(Bone *bone);
+    void scaleBone(glm::vec3 scaleAmount);
     void addParent(Bone *bone);
     void update(float rotation, glm::vec3 rotationAxis);
     void updateChild(glm::mat4 ParentMVP, glm::mat4 ParentModelMatrix);

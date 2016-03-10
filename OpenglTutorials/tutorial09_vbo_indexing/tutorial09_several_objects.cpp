@@ -65,27 +65,32 @@ int main( void )
     Bone child;
     Bone child2;
     Bone child3;
+    Bone child4;
     Bone endEffectorBone;
 
     Finger finger1(root); // root added as bone to finger on init of finger
     finger1.addBone(root);
     finger1.addBone(child);
     finger1.addBone(child2);
-    finger1.addBone(child3);
+//    finger1.addBone(child3);
+//    finger1.addBone(child4);
     finger1.addBone(endEffectorBone);
     
     root.addChild(&child);
     child.addChild(&child2);
-    child2.addChild(&child3);
-    child3.addChild(&endEffectorBone);
+//    child2.addChild(&child3);
+//    child3.addChild(&child4);
+    child2.addChild(&endEffectorBone);
     
     child.addParent(&root);
     child2.addParent(&child);
-    child3.addParent(&child2);
-    endEffectorBone.addParent(&child3);
+//    child3.addParent(&child2);
+//    child4.addParent(&child3);
+    endEffectorBone.addParent(&child2);
 
     skeleton.addFinger(finger1);
-    
+    endEffectorBone.scaleBone(glm::vec3(0.3f, 0.8f, 0.3f));
+
     initStuff();
 
 	GLuint VertexArrayID;
@@ -265,15 +270,13 @@ int main( void )
         
         if(followCurve) {
             float t = glm::mod( (float)currentTime, 5.0f ) / (5.0f);
-            glm::vec3 a = glm::vec3(1.0f, 9.0f, 1.0f);
-            glm::vec3 d = glm::vec3(1.0f, 9.0f, 1.0f);
+            glm::vec3 a = glm::vec3(7.0f, 3.0f, 1.0f);
+            glm::vec3 d = glm::vec3(1.0f, 10.0f, 1.0f);
             glm::vec3 c = glm::vec3(-6.0f, 6.0f, 6.0f);
             glm::vec3 b = glm::vec3(9.0f, 6.0f, 6.0f);
             targetPosition = curve(t, a, b, c, d);
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
-            cout << "t = " << t << endl;
-            cout << "Target Pos = " << glm::to_string(targetPosition) << endl;
         }
         
         if(targetNotFound) {
@@ -305,15 +308,11 @@ int main( void )
 void calcIK(Finger finger1, Bone root2) {
     
     // IK - CCD
-        glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[finger1.bones.size()-1]->ModelMatrixTemp[3]); //
-        targetPosition = glm::vec3(root2.ModelMatrix[3]);
+    glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[finger1.bones.size()-1]->ModelMatrixTemp[3]); //
+    targetPosition = glm::vec3(root2.ModelMatrix[3]);
     
     if (targetNotFound) {
         for(int i=finger1.bones.size()-2; i>=0 ; i--) {
-            
-            // Get end effector position from Model Matrix of End Effector Bone
-        
-            // Get current bone's pivot position
             glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
             
             glm::vec3 targetVector = targetPosition - currBonePosition;
@@ -321,28 +320,26 @@ void calcIK(Finger finger1, Bone root2) {
             endEffector = glm::normalize(endEffector);
             targetVector = glm::normalize(targetVector);
             
-            // Calculate angle of rotation from dot product of these two
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
-            // Get axis of rotation from cross product of targetVector and end effector vector
-            glm::vec3 rotationAxis = glm::cross(targetVector, endEffector);
-            rotationAxis = glm::mat3(glm::inverse(finger1.bones[i]->ModelMatrixTemp)) * rotationAxis;
-            //            rotationAxis = glm::mat3(glm::inverse(finger1.bones[i]->parent->ModelMatrixTemp * finger1.bones[i]->ModelMatrixTemp)) * rotationAxis;
-            rotationAxis = glm::normalize(rotationAxis);
-            if((rotationAngle >=0 || rotationAngle <0)) {
-                finger1.bones[i]->update(-rotationAngle, rotationAxis);
-            }
-            endEffectorBonePosition = glm::vec3(finger1.bones[4]->ModelMatrixTemp[3]); //
-//            cout << "Rotation Angle " << rotationAngle << endl;
-            float distance = glm::distance(endEffectorBonePosition, targetPosition);
             
-            // if angle between a certain threshold, stop rotating!
+            glm::vec3 rotationAxis = glm::cross(endEffector, targetVector);       //targetVector, endEffector);
+            rotationAxis = glm::mat3(glm::inverse(finger1.bones[i]->ModelMatrixTemp)) * rotationAxis;
+            rotationAxis = glm::normalize(rotationAxis);
+            float distance = glm::distance(endEffectorBonePosition, targetPosition);
+            cout << "Target Position = " << glm::to_string(targetPosition) << endl;
+            if((rotationAngle > 0 || rotationAngle < 0) ) {
+                finger1.bones[i]->update(rotationAngle, rotationAxis);
+            }
+            endEffectorBonePosition = glm::vec3(finger1.bones[finger1.bones.size()-1]->ModelMatrixTemp[3]); //
+//            cout << "Rotation Angle " << rotationAngle << endl;
+            
             if (glm::dot(targetVector, endEffector) > 1.0f) {
                 targetNotFound = false;
             }
-            else if (distance < 0.1f) {
+            if (distance < 0.01f) {
                 targetNotFound = false;
             }
-            else if (targetPosition == endEffectorBonePosition) {
+            if (targetPosition == endEffectorBonePosition) {
                 targetNotFound = false;
             }
             else {
@@ -432,7 +429,7 @@ int initStuff() {
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     
     // Dark blue background
-    glClearColor(0.0f, 0.0f, 0.4f, 0.0f);
+    glClearColor(0.1f, 1.0f, 1.f, 1.0f);
     
     // Enable depth test
     glEnable(GL_DEPTH_TEST);

@@ -32,7 +32,7 @@ void Bone::update(float rotation, glm::vec3 rotationAxis) {
 
     // Rotate bone's model matrix
     ModelMatrix = glm::rotate(ModelMatrix, rotation, rotationAxis);
-
+    assert(ModelMatrix == ModelMatrix);
     if(hasParent()) {
         MVP = parent->MVP * ModelMatrix;
         ModelMatrixTemp = parent->ModelMatrix * ModelMatrix;
@@ -54,6 +54,10 @@ void Bone::updateChild(glm::mat4 ParentMVP, glm::mat4 ParentModelMatrix) {
     if(child->hasChild()) {
         child->updateChild(child->MVP, child->ModelMatrixTemp);
     }
+}
+
+void Bone::scaleBone(glm::vec3 scaleAmount) {
+    this->ModelMatrix = glm::scale(this->ModelMatrix, scaleAmount);
 }
 
 bool Bone::hasChild() {
