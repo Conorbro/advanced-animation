@@ -40,7 +40,7 @@ void Bone::update(float rotation, glm::vec3 rotationAxis) {
     
     // If the bone has a child, update the child with the current bone's mvp
     if(hasChild()) {
-        updateChild(MVP, ModelMatrix);
+        updateChild(MVP, ModelMatrixTemp);
     }
 
 }
