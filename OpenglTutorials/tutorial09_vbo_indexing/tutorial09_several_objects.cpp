@@ -54,6 +54,16 @@ float rotate_angle = 0.01f;
 float translateAmount = 0.1f;
 bool targetNotFound = false;
 bool followCurve = false;
+bool path1 = false;
+glm::vec3 a = glm::vec3(7.0f, 3.0f, 1.0f);
+glm::vec3 d = glm::vec3(1.0f, 10.0f, 1.0f);
+glm::vec3 c = glm::vec3(-6.0f, 6.0f, 6.0f);
+glm::vec3 b = glm::vec3(9.0f, 6.0f, 6.0f);
+
+glm::vec3 ee = glm::vec3(9.0f, 6.0f, 6.0f);
+glm::vec3 f = glm::vec3(1.0f, 10.0f, 1.0f);
+glm::vec3 g = glm::vec3(-6.0f, 6.0f, 6.0f);
+glm::vec3 h = glm::vec3(7.0f, 2.0f, 0.0f);
 
 int main( void )
 {
@@ -222,25 +232,25 @@ int main( void )
             root.update(0.0f, glm::vec3(0, 0, 1));
         }
         
-        if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS){
+        if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.x += translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
         }
         
-        if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS){
+        if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.x -= translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
         }
         
-        if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS){
+        if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.y += translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
         }
         
-        if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS){
+        if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.y -= translateAmount;
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
@@ -270,13 +280,27 @@ int main( void )
         
         if(followCurve) {
             float t = glm::mod( (float)currentTime, 5.0f ) / (5.0f);
-            glm::vec3 a = glm::vec3(7.0f, 3.0f, 1.0f);
-            glm::vec3 d = glm::vec3(1.0f, 10.0f, 1.0f);
-            glm::vec3 c = glm::vec3(-6.0f, 6.0f, 6.0f);
-            glm::vec3 b = glm::vec3(9.0f, 6.0f, 6.0f);
-            targetPosition = curve(t, a, b, c, d);
+            t = t*2;
+            if(t<1) {
+                targetPosition = curve(t, a, b, c, d);
+                cout << " Curve 1" << endl;
+            } else {
+                t = 2 - t;
+                targetPosition = curve(t, d, c, b, a);
+                cout << " Curve 2" << endl;
+            }
+//            targetPosition = curve(t, a, b, c, d);
             root2.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            
+            if(targetPosition == glm::vec3(-0.85f, 7.9f, 3.5f)) {
+                a = glm::vec3(14.0f, 3.0f, 1.0f);
+                d = glm::vec3(1.0f, 10.0f, 1.0f);
+                c = glm::vec3(-6.0f, 6.0f, 6.0f);
+                b = glm::vec3(9.0f, 6.0f, 6.0f);
+
+            }
+            
         }
         
         if(targetNotFound) {
@@ -326,12 +350,10 @@ void calcIK(Finger finger1, Bone root2) {
             rotationAxis = glm::mat3(glm::inverse(finger1.bones[i]->ModelMatrixTemp)) * rotationAxis;
             rotationAxis = glm::normalize(rotationAxis);
             float distance = glm::distance(endEffectorBonePosition, targetPosition);
-            cout << "Target Position = " << glm::to_string(targetPosition) << endl;
             if((rotationAngle > 0 || rotationAngle < 0) ) {
                 finger1.bones[i]->update(rotationAngle, rotationAxis);
             }
             endEffectorBonePosition = glm::vec3(finger1.bones[finger1.bones.size()-1]->ModelMatrixTemp[3]); //
-//            cout << "Rotation Angle " << rotationAngle << endl;
             
             if (glm::dot(targetVector, endEffector) > 1.0f) {
                 targetNotFound = false;
@@ -426,7 +448,12 @@ int initStuff() {
     // Ensure we can capture the escape key being pressed below
     glfwSetInputMode(window, GLFW_STICKY_KEYS, GL_TRUE);
     // Hide the mouse and enable unlimited movement
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+//    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    
+    // Set the mouse at the center of the screen
+    glfwPollEvents();
+    glfwSetCursorPos(window, 1024/2, 768/2);
     
     // Dark blue background
     glClearColor(0.1f, 1.0f, 1.f, 1.0f);
