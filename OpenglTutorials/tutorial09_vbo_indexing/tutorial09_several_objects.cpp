@@ -36,15 +36,16 @@ using namespace glm;
 
 int initStuff();
 void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
-void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix);
+void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix, float offSetZ, float rootOffset);
 void playAnimation(Bone &bone,mat4 ProjectionMatrix, mat4 ViewMatrix, float deltaTime);
-void calcIK(Finger finger1, Bone root2);
+void calcIK(Finger finger, Bone target);
 glm::vec3 curve(float t, glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3);
 GLuint MatrixID, ViewMatrixID, ModelMatrixID;
 GLuint vertexbuffer, uvbuffer, normalbuffer, elementbuffer;
 std::vector<unsigned short> indices;
 
 Skeleton skeleton;
+Skeleton skeleton2;
 
 glm::vec3 targetPosition = glm::vec3(6.0f, 6.0f, -0.5f);
 glm::vec3 endPointPosition;
@@ -53,6 +54,7 @@ float angle;
 float rotate_angle = 0.01f;
 float translateAmount = 0.1f;
 bool targetNotFound = false;
+bool targetNotFoundFinger2 = false;
 bool followCurve = false;
 bool path1 = false;
 glm::vec3 a = glm::vec3(7.0f, 3.0f, 1.0f);
@@ -67,39 +69,54 @@ glm::vec3 h = glm::vec3(7.0f, 2.0f, 0.0f);
 
 int main( void )
 {
+    // Target object
+    Bone target;
     
     // Finger 1
-    // Init root bone and child bone
     Bone root;
-    Bone root2;
     Bone child;
     Bone child2;
+    Bone endEffectorBone;
+    
+    // Finger 2
+    Bone root2;
     Bone child3;
     Bone child4;
-    Bone endEffectorBone;
-
+    Bone endEffectorBone2;
+    
     Finger finger1(root); // root added as bone to finger on init of finger
     finger1.addBone(root);
     finger1.addBone(child);
     finger1.addBone(child2);
-//    finger1.addBone(child3);
-//    finger1.addBone(child4);
     finger1.addBone(endEffectorBone);
+    
+    Finger finger2(root2);
+    finger2.addBone(root2);
+    finger2.addBone(child3);
+    finger2.addBone(child4);
+    finger2.addBone(endEffectorBone2);
     
     root.addChild(&child);
     child.addChild(&child2);
-//    child2.addChild(&child3);
-//    child3.addChild(&child4);
     child2.addChild(&endEffectorBone);
+    
+    root2.addChild(&child3);
+    child3.addChild(&child4);
+    child4.addChild(&endEffectorBone2);
     
     child.addParent(&root);
     child2.addParent(&child);
-//    child3.addParent(&child2);
-//    child4.addParent(&child3);
     endEffectorBone.addParent(&child2);
+    
+    child3.addParent(&root2);
+    child4.addParent(&child3);
+    endEffectorBone2.addParent(&child4);
 
     skeleton.addFinger(finger1);
     endEffectorBone.scaleBone(glm::vec3(0.3f, 0.8f, 0.3f));
+    
+    skeleton2.addFinger(finger2);
+    endEffectorBone2.scaleBone(glm::vec3(0.3f, 0.8f, 0.3f));
 
     initStuff();
 
@@ -162,11 +179,12 @@ int main( void )
     glm::mat4 ProjectionMatrix = getProjectionMatrix();
     glm::mat4 ViewMatrix = getViewMatrix();
     
-    initMVP(finger1, ProjectionMatrix, ViewMatrix);
+    initMVP(finger1, ProjectionMatrix, ViewMatrix, 2.0f, 0.0f);
+    initMVP(finger2, ProjectionMatrix, ViewMatrix, 2.0f, 5.0f);
     
-    root2.position = targetPosition;
-    root2.ModelMatrix = glm::translate(root2.ModelMatrix, root2.position);
-    root2.MVP = root2.ModelMatrix * ViewMatrix * ProjectionMatrix;
+    target.position = targetPosition;
+    target.ModelMatrix = glm::translate(target.ModelMatrix, target.position);
+    target.MVP = target.ModelMatrix * ViewMatrix * ProjectionMatrix;
 
     // GAME LOOP //
     
@@ -199,15 +217,20 @@ int main( void )
 
 		// Send our transformation to the currently bound shader,
 		// in the "MVP" uniform
-        root.MVP  = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
-        root2.MVP  = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
+        root.MVP    = ProjectionMatrix * ViewMatrix * root.ModelMatrix;
+        root2.MVP   = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
+        target.MVP  = ProjectionMatrix * ViewMatrix * target.ModelMatrix;
    
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-        
+
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root2.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root2.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &target.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &target.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
    
 		// Bind our texture in Texture Unit 0
@@ -217,6 +240,7 @@ int main( void )
         
         // Render Fingers
         render(finger1, ProjectionMatrix, ViewMatrix);
+        render(finger2, ProjectionMatrix, ViewMatrix);
    
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -230,49 +254,56 @@ int main( void )
         // Move Parent Cat Up and Down, update Child Bone relatively
         if (glfwGetKey( window, GLFW_KEY_W ) == GLFW_PRESS){
             root.update(0.0f, glm::vec3(0, 0, 1));
+            root2.update(0.0f, glm::vec3(0, 0, 1));
         }
         
         if (glfwGetKey( window, GLFW_KEY_RIGHT ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.x += translateAmount;
-            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
+            
         }
         
         if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.x -= translateAmount;
-            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.y += translateAmount;
-            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_DOWN ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) != GLFW_PRESS){
             targetPosition.y -= translateAmount;
-            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_D ) == GLFW_PRESS){
           targetPosition.z += translateAmount;
-          root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+          target.ModelMatrix = glm::translate(mat4(), targetPosition);
           targetNotFound = true;
+          targetNotFoundFinger2 = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_E ) == GLFW_PRESS){
             targetPosition.z -= translateAmount;
-            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_M ) == GLFW_PRESS ){
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
         }
-        
-        
         
         if (glfwGetKey( window, GLFW_KEY_B ) == GLFW_PRESS ){
             followCurve = !followCurve;
@@ -290,8 +321,9 @@ int main( void )
                 cout << " Curve 2" << endl;
             }
 //            targetPosition = curve(t, a, b, c, d);
-            root2.ModelMatrix = glm::translate(mat4(), targetPosition);
+            target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
+            targetNotFoundFinger2 = true;
             
             if(targetPosition == glm::vec3(-0.85f, 7.9f, 3.5f)) {
                 a = glm::vec3(14.0f, 3.0f, 1.0f);
@@ -304,9 +336,11 @@ int main( void )
         }
         
         if(targetNotFound) {
-            calcIK(finger1, root2);
+            calcIK(finger1, target);
         }
-        
+        if(targetNotFoundFinger2) {
+            calcIK(finger2, target);
+        }
         
        	
     } // Check if the ESC key was pressed or the window was closed
@@ -329,15 +363,15 @@ int main( void )
 	return 0;
 }
 
-void calcIK(Finger finger1, Bone root2) {
+void calcIK(Finger finger, Bone target) {
     
     // IK - CCD
-    glm::vec3 endEffectorBonePosition = glm::vec3(finger1.bones[finger1.bones.size()-1]->ModelMatrixTemp[3]); //
-    targetPosition = glm::vec3(root2.ModelMatrix[3]);
+    glm::vec3 endEffectorBonePosition = glm::vec3(finger.bones[finger.bones.size()-1]->ModelMatrixTemp[3]); //
+    targetPosition = glm::vec3(target.ModelMatrix[3]);
     
-    if (targetNotFound) {
-        for(int i=finger1.bones.size()-2; i>=0 ; i--) {
-            glm::vec3 currBonePosition = glm::vec3(finger1.bones[i]->ModelMatrixTemp[3]); //
+    if (targetNotFound || targetNotFoundFinger2) {
+        for(int i=finger.bones.size()-2; i>=0 ; i--) {
+            glm::vec3 currBonePosition = glm::vec3(finger.bones[i]->ModelMatrixTemp[3]); //
             
             glm::vec3 targetVector = targetPosition - currBonePosition;
             glm::vec3 endEffector = endEffectorBonePosition - currBonePosition;
@@ -347,25 +381,29 @@ void calcIK(Finger finger1, Bone root2) {
             float rotationAngle = glm::acos(glm::dot(targetVector, endEffector));
             
             glm::vec3 rotationAxis = glm::cross(endEffector, targetVector);       //targetVector, endEffector);
-            rotationAxis = glm::mat3(glm::inverse(finger1.bones[i]->ModelMatrixTemp)) * rotationAxis;
+            rotationAxis = glm::mat3(glm::inverse(finger.bones[i]->ModelMatrixTemp)) * rotationAxis;
             rotationAxis = glm::normalize(rotationAxis);
             float distance = glm::distance(endEffectorBonePosition, targetPosition);
             if((rotationAngle > 0 || rotationAngle < 0) ) {
-                finger1.bones[i]->update(rotationAngle, rotationAxis);
+                finger.bones[i]->update(rotationAngle, rotationAxis);
             }
-            endEffectorBonePosition = glm::vec3(finger1.bones[finger1.bones.size()-1]->ModelMatrixTemp[3]); //
+            endEffectorBonePosition = glm::vec3(finger.bones[finger.bones.size()-1]->ModelMatrixTemp[3]); //
             
             if (glm::dot(targetVector, endEffector) > 1.0f) {
                 targetNotFound = false;
+                targetNotFoundFinger2 = false;
             }
             if (distance < 0.01f) {
                 targetNotFound = false;
+                targetNotFoundFinger2 = false;
             }
             if (targetPosition == endEffectorBonePosition) {
                 targetNotFound = false;
+                targetNotFoundFinger2 = false;
             }
             else {
                 targetNotFound = true;
+                targetNotFoundFinger2 = true;
             }
         }
     }
@@ -395,11 +433,11 @@ void render(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
     }
 }
 
-void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix) {
-    float offSetZ = 2.0f;
+void initMVP(Finger &finger, glm::mat4 ProjectionMatrix, glm::mat4 ViewMatrix, float offSetZ, float rootOffset) {
+//    float offSetZ = 2.0f;
     for (int i = 0; i<finger.bones.size(); i++) {
         if (i==0) {
-            finger.bones[i]->position = glm::vec3(0.0f, 0.0f, 0.0f);
+            finger.bones[i]->position = glm::vec3(rootOffset, 0.0f, 0.0f);
             finger.bones[i]->ModelMatrix = glm::translate(finger.bones[i]->ModelMatrix, finger.bones[i]->position);
             finger.bones[i]->MVP = finger.bones[i]->ModelMatrix  * ViewMatrix * ProjectionMatrix;
         } else {
