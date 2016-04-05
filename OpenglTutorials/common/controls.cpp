@@ -70,6 +70,7 @@ void computeMatricesFromInputs(){
     
     // Up vector
     glm::vec3 up = glm::cross( right, direction );
+    glm::vec3 down = glm::vec3(0,-1,0);
     
     // Move forward
     if (glfwGetKey( window, GLFW_KEY_UP ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS){
@@ -96,7 +97,7 @@ void computeMatricesFromInputs(){
     ViewMatrix       = glm::lookAt(
                                    position,           // Camera is here
                                    position+direction, // and looks here : at the same position, plus "direction"
-                                   up                  // Head is up (set to 0,-1,0 to look upside-down)
+                                   down                  // Head is up (set to 0,-1,0 to look upside-down)
                                    );
     
     // For the next frame, the "last time" will be "now"
