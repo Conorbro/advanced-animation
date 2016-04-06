@@ -23,10 +23,10 @@ glm::mat4 getProjectionMatrix(){
     return ProjectionMatrix;
 }
 
-glm::vec3 position = glm::vec3(0.07, 1.83, 21.53);
-float horizontalAngle = 3.11f;
+glm::vec3 position = glm::vec3(9.5, 1.76, 13.85);
+float horizontalAngle = 3.87f;
 // Initial vertical angle : none
-float verticalAngle = -0.025f;
+float verticalAngle = 0.055;
 // Initial Field of View
 float initialFoV = 45.0f;
 
@@ -34,7 +34,9 @@ float speed = 3.0f; // 3 units / second
 float mouseSpeed = 0.005f;
 
 void computeMatricesFromInputs(){
-    
+    std::cout << position.x << " " << position.y << " " << position.z << std::endl;
+    std::cout << "Horiz = " << horizontalAngle << std::endl;
+    std::cout << "vertical = " << verticalAngle << std::endl;
     static double lastTime = glfwGetTime();
     
     // Compute time difference between current and last frame
@@ -69,7 +71,7 @@ void computeMatricesFromInputs(){
                                 );
     
     // Up vector
-    glm::vec3 up = glm::cross( right, direction );
+//    glm::vec3 up = glm::cross( right, direction );
     glm::vec3 down = glm::vec3(0,-1,0);
     
     // Move forward

@@ -51,8 +51,9 @@ std::vector<unsigned short> bindices;
 Skeleton skeleton;
 Skeleton skeleton2;
 
-glm::vec3 targetPosition = glm::vec3(6.0f, 5.0f, -0.5f);
+glm::vec3 targetPosition = glm::vec3(0.0f, 5.0f, -0.5f);
 glm::vec3 ballPosition = glm::vec3(-6.0f, 6.0f, -0.5f);
+glm::vec3 pitchPosition = glm::vec3(-6.0f, 9.0f, -0.5f);
 glm::vec3 endPointPosition;
 glm::vec3 currJointPosition;
 float angle;
@@ -66,6 +67,7 @@ bool ballGravity = false;
 bool goDown = false;
 bool goRight = false;
 bool start = false;
+bool ballGo = false;
 
 glm::vec3 a = glm::vec3(7.0f, 3.0f, 1.0f);
 glm::vec3 d = glm::vec3(1.0f, 10.0f, 1.0f);
@@ -85,6 +87,9 @@ int main( void )
     // Bouncy ball object
     Bone ball;
     float original_x_scale = ball.mScale.x;
+    
+    // Pitch object
+    Bone pitch;
     
     // Finger 1
     Bone root;
@@ -129,7 +134,6 @@ int main( void )
     skeleton.addFinger(finger1);
     endEffectorBone.scaleBone(glm::vec3(0.3f, 0.8f, 2.3f));
 //    endEffectorBone.scaleBone(glm::vec3(4.3f, 1.0f, 1.0f));
-
     
     skeleton2.addFinger(finger2);
     endEffectorBone2.scaleBone(glm::vec3(0.3f, 0.8f, 0.3f));
@@ -149,12 +153,14 @@ int main( void )
 	ModelMatrixID = glGetUniformLocation(programID, "M");
 
 	// Load the texture
-	GLuint Texture = loadDDS("red.DDS");
-    GLuint ballTexture = loadDDS("uvmap.DDS");
+	GLuint Texture = loadDDS("football.DDS");
+    GLuint ballTexture = loadDDS("grass.DDS");
+    GLuint pitchTexture = loadDDS("black.DDS");
 	
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
     GLuint ballTextureID = glGetUniformLocation(programID, "ballTexture");
+    GLuint pitchTextureID = glGetUniformLocation(programID, "grassTexture");
 
 	// Read our .obj file
 	std::vector<glm::vec3> vertices;
@@ -237,8 +243,12 @@ int main( void )
     ball.ModelMatrix = glm::translate(ball.ModelMatrix, ball.position);
     ball.MVP = ball.ModelMatrix * ViewMatrix * ProjectionMatrix;
     
-    // GAME LOOP //
+    pitch.position = pitchPosition;
+    pitch.ModelMatrix = glm::translate(pitch.ModelMatrix, pitch.position);
+    pitch.MVP = ball.ModelMatrix * ViewMatrix * ProjectionMatrix;
     
+    // GAME LOOP //
+        pitch.scaleBone(glm::vec3(20.f, 0.3f, 20.f));
     do{
         ProjectionMatrix = getProjectionMatrix();
         ViewMatrix = getViewMatrix();
@@ -262,7 +272,7 @@ int main( void )
 		// Use our shader
 		glUseProgram(programID);
 	
-		glm::vec3 lightPos = glm::vec3(2, 2, 2);
+		glm::vec3 lightPos = glm::vec3(4, 0, 2);
 		glUniform3f(LightID, lightPos.x, lightPos.y, lightPos.z);
 		glUniformMatrix4fv(ViewMatrixID, 1, GL_FALSE, &ViewMatrix[0][0]); // This one doesn't change between objects, so this can be done once for all objects that use "programID"
 
@@ -272,11 +282,12 @@ int main( void )
 //        root2.MVP   = ProjectionMatrix * ViewMatrix * root2.ModelMatrix;
         target.MVP  = ProjectionMatrix * ViewMatrix * target.ModelMatrix;
         ball.MVP    = ProjectionMatrix * ViewMatrix * ball.ModelMatrix;
-   
+        pitch.MVP   = ProjectionMatrix * ViewMatrix * pitch.ModelMatrix;
+        
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-
+        
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root2.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root2.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
@@ -285,18 +296,18 @@ int main( void )
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &target.ModelMatrix[0][0]);
         skeleton.bindDraw(bvertexbuffer, buvbuffer, bnormalbuffer, belementbuffer, bindices);
         
-        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &target.MVP[0][0]);
-        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &target.ModelMatrix[0][0]);
-        skeleton.bindDraw(bvertexbuffer, buvbuffer, bnormalbuffer, belementbuffer, bindices);
-        
+        // Render Fingers
+        render(finger1, ProjectionMatrix, ViewMatrix);
+//        render(finger2, ProjectionMatrix, ViewMatrix);
+   
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, Texture);
 		glUniform1i(TextureID, 0);
         
-        // Render Fingers
-        render(finger1, ProjectionMatrix, ViewMatrix);
-        render(finger2, ProjectionMatrix, ViewMatrix);
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &target.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &target.ModelMatrix[0][0]);
+        skeleton.bindDraw(bvertexbuffer, buvbuffer, bnormalbuffer, belementbuffer, bindices);
    
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &ball.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &ball.ModelMatrix[0][0]);
@@ -305,7 +316,15 @@ int main( void )
         // Bind our texture in Texture Unit 0
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, ballTexture);
-        glUniform1i(ballTextureID, 0);
+        glUniform1i(ballTextureID, 1);
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &pitch.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &pitch.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, pitchTexture);
+        glUniform1i(pitchTextureID, 1);
         
         glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
@@ -380,36 +399,37 @@ int main( void )
         }
         
         /////// Bounce the ball if gravity is on ///////
-        
-        if(!ballGravity) {
-            if(ballPosition.y > -7.3f && goDown) {
-                ballPosition.y -= translateAmount;
-            } else {
-                ballPosition.y += translateAmount;
-                goDown = false;
-                if (ballPosition.y > 5.0f) {
-                    goDown = true;
+        if(ballGo) {
+            if(!ballGravity) {
+//                if(ballPosition.y > -7.3f && goDown) {
+//                    ballPosition.y -= translateAmount;
+//                } else {
+//                    ballPosition.y += translateAmount;
+//                    goDown = false;
+                    if (ballPosition.y > -7.0f) {
+//                        goDown = true;
+                        ballPosition.y -= translateAmount;
+                    }
+//                }
+
+                ball.ModelMatrix = glm::translate(mat4(), ballPosition);
+            }
+            
+            if(ballPosition.y < -6.0f && goDown) {
+                if (ball.mScale.x < original_x_scale + 2.5f) {
+                    ball.mScale.x += translateAmount;
                 }
+                ball.scaleBone(ball.mScale);
             }
-            ball.ModelMatrix = glm::translate(mat4(), ballPosition);
-        }
-        
-        if(ballPosition.y < -6.0f && goDown) {
-            if (ball.mScale.x < original_x_scale + 2.5f) {
+            else if (ballPosition.y < -6.0f && !goDown && ball.mScale.x < original_x_scale + 2.5f) {
                 ball.mScale.x += translateAmount;
+                ball.scaleBone(ball.mScale);
             }
-            cout << ball.mScale.x << endl;
-            ball.scaleBone(ball.mScale);
+            
+            if(ballPosition.y > 5.0f) {
+                ball.mScale.x = original_x_scale;
+            }
         }
-        else if (ballPosition.y < -6.0f && !goDown) {
-            ball.mScale.x -= translateAmount;
-            ball.scaleBone(ball.mScale);
-        }
-        
-        if(ballPosition.y > 5.0f) {
-            ball.mScale.x = original_x_scale;
-        }
-        
         ////// Ball Stuff!! /////////
         
         //// Target stuff! ////////
@@ -427,7 +447,12 @@ int main( void )
                 target.ModelMatrix = glm::translate(mat4(), targetPosition);
             }
             
+            if ( targetPosition.x < -5.0f) {
+                ballGo = true;
+            }
+            
             if(targetPosition.x < -6.0f && goRight) {
+                
                 if (target.mScale.y < original_x_scale + 2.5f) {
                     target.mScale.y += translateAmount;
                 }
@@ -493,6 +518,7 @@ int main( void )
 	glDeleteProgram(programID);
 	glDeleteTextures(1, &Texture);
     glDeleteTextures(1, &ballTexture);
+    glDeleteTextures(1, &pitchTexture);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
 	// Close OpenGL window and terminate GLFW
@@ -603,7 +629,7 @@ int initStuff() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     // Open a window and create its OpenGL context
-    window = glfwCreateWindow( 1024, 768, "Ball Thrower Animation Project!", NULL, NULL);
+    window = glfwCreateWindow( 1024, 768, "Football Kick Animation!", NULL, NULL);
     if( window == NULL ){
         fprintf( stderr, "Failed to open GLFW window. If you have an Intel GPU, they are not 3.3 compatible. Try the 2.1 version of the tutorials.\n" );
         getchar();
@@ -632,7 +658,7 @@ int initStuff() {
     glfwSetCursorPos(window, 1024/2, 768/2);
     
     // Dark blue background
-    glClearColor(0.1f, 1.0f, 1.f, 1.0f);
+    glClearColor(0.0f, 100.0f, 0.f, 2.0f);
     
     // Enable depth test
     glEnable(GL_DEPTH_TEST);
