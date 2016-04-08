@@ -51,9 +51,10 @@ std::vector<unsigned short> bindices;
 Skeleton skeleton;
 Skeleton skeleton2;
 
-glm::vec3 targetPosition = glm::vec3(0.0f, 5.0f, -0.5f);
+glm::vec3 targetPosition = glm::vec3(-1.0f, 5.0f, -0.5f);
 glm::vec3 ballPosition = glm::vec3(-6.0f, 6.0f, -0.5f);
 glm::vec3 pitchPosition = glm::vec3(-6.0f, 9.0f, -0.5f);
+glm::vec3 wallPosition = glm::vec3(-12.5f, 6.0f, -0.5f);
 glm::vec3 endPointPosition;
 glm::vec3 currJointPosition;
 float angle;
@@ -69,10 +70,10 @@ bool goRight = false;
 bool start = false;
 bool ballGo = false;
 
-glm::vec3 a = glm::vec3(7.0f, 3.0f, 1.0f);
-glm::vec3 d = glm::vec3(1.0f, 10.0f, 1.0f);
-glm::vec3 c = glm::vec3(-6.0f, 6.0f, 6.0f);
-glm::vec3 b = glm::vec3(9.0f, 6.0f, 6.0f);
+glm::vec3 a = glm::vec3(8.0f, 6.0f, ballPosition.z);
+glm::vec3 d = glm::vec3(-6.0f, 6.0f, ballPosition.z);
+glm::vec3 c = glm::vec3(ballPosition.x, ballPosition.y, ballPosition.z);
+glm::vec3 b = glm::vec3(ballPosition.x, ballPosition.y, ballPosition.z);
 
 glm::vec3 ee = glm::vec3(9.0f, 6.0f, 6.0f);
 glm::vec3 f = glm::vec3(1.0f, 10.0f, 1.0f);
@@ -87,9 +88,11 @@ int main( void )
     // Bouncy ball object
     Bone ball;
     float original_x_scale = ball.mScale.x;
+    float original_y_scale = ball.mScale.y;
     
     // Pitch object
     Bone pitch;
+    Bone wall;
     
     // Finger 1
     Bone root;
@@ -132,7 +135,7 @@ int main( void )
     endEffectorBone2.addParent(&child4);
 
     skeleton.addFinger(finger1);
-    endEffectorBone.scaleBone(glm::vec3(0.3f, 0.8f, 2.3f));
+    endEffectorBone.scaleBone(glm::vec3(2.3f, 1.0f, 1.3f));
 //    endEffectorBone.scaleBone(glm::vec3(4.3f, 1.0f, 1.0f));
     
     skeleton2.addFinger(finger2);
@@ -156,11 +159,13 @@ int main( void )
 	GLuint Texture = loadDDS("football.DDS");
     GLuint ballTexture = loadDDS("grass.DDS");
     GLuint pitchTexture = loadDDS("black.DDS");
+    GLuint legTexture = loadDDS("pink.DDS");
 	
 	// Get a handle for our "myTextureSampler" uniform
 	GLuint TextureID  = glGetUniformLocation(programID, "myTextureSampler");
     GLuint ballTextureID = glGetUniformLocation(programID, "ballTexture");
     GLuint pitchTextureID = glGetUniformLocation(programID, "grassTexture");
+    GLuint legTextureID = glGetUniformLocation(programID, "legTexture");
 
 	// Read our .obj file
 	std::vector<glm::vec3> vertices;
@@ -232,8 +237,8 @@ int main( void )
     glm::mat4 ProjectionMatrix = getProjectionMatrix();
     glm::mat4 ViewMatrix = getViewMatrix();
     
-    initMVP(finger1, ProjectionMatrix, ViewMatrix, 2.0f, 0.0f);
-    initMVP(finger2, ProjectionMatrix, ViewMatrix, 2.0f, 5.0f);
+    initMVP(finger1, ProjectionMatrix, ViewMatrix, 2.0f, 1.0f);
+//    initMVP(finger2, ProjectionMatrix, ViewMatrix, 2.0f, 5.0f);
     
     target.position = targetPosition;
     target.ModelMatrix = glm::translate(target.ModelMatrix, target.position);
@@ -245,10 +250,16 @@ int main( void )
     
     pitch.position = pitchPosition;
     pitch.ModelMatrix = glm::translate(pitch.ModelMatrix, pitch.position);
-    pitch.MVP = ball.ModelMatrix * ViewMatrix * ProjectionMatrix;
+    pitch.MVP = pitch.ModelMatrix * ViewMatrix * ProjectionMatrix;
+
+    wall.position = wallPosition;
+    wall.ModelMatrix = glm::translate(wall.ModelMatrix, wall.position);
+    wall.MVP = wall.ModelMatrix * ViewMatrix * ProjectionMatrix;
+    
+    pitch.scaleBone(glm::vec3(20.f, 0.3f, 20.f));
+    wall.scaleBone(glm::vec3(5.f, 5.f, 20.f));
     
     // GAME LOOP //
-        pitch.scaleBone(glm::vec3(20.f, 0.3f, 20.f));
     do{
         ProjectionMatrix = getProjectionMatrix();
         ViewMatrix = getViewMatrix();
@@ -283,13 +294,18 @@ int main( void )
         target.MVP  = ProjectionMatrix * ViewMatrix * target.ModelMatrix;
         ball.MVP    = ProjectionMatrix * ViewMatrix * ball.ModelMatrix;
         pitch.MVP   = ProjectionMatrix * ViewMatrix * pitch.ModelMatrix;
+        wall.MVP    = ProjectionMatrix * ViewMatrix * wall.ModelMatrix;
+        
+        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &wall.MVP[0][0]);
+        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &wall.ModelMatrix[0][0]);
+        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
+        
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, legTexture);
+        glUniform1i(legTextureID, 1);
         
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root.MVP[0][0]);
         glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root.ModelMatrix[0][0]);
-        skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
-        
-        glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &root2.MVP[0][0]);
-        glUniformMatrix4fv(ModelMatrixID, 1, GL_FALSE, &root2.ModelMatrix[0][0]);
         skeleton.bindDraw(vertexbuffer, uvbuffer, normalbuffer, elementbuffer, indices);
         
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &endEffectorBone.MVP[0][0]);
@@ -299,7 +315,7 @@ int main( void )
         // Render Fingers
         render(finger1, ProjectionMatrix, ViewMatrix);
 //        render(finger2, ProjectionMatrix, ViewMatrix);
-   
+        
 		// Bind our texture in Texture Unit 0
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, Texture);
@@ -391,6 +407,8 @@ int main( void )
         
         if (glfwGetKey( window, GLFW_KEY_B ) == GLFW_PRESS ){
             followCurve = !followCurve;
+            start = true;
+            goRight = true;
         }
         
         if (glfwGetKey( window, GLFW_KEY_G) == GLFW_PRESS ){
@@ -435,10 +453,10 @@ int main( void )
         //// Target stuff! ////////
         if(start) {
             if(!ballGravity) {
-                if(targetPosition.x > -7.3f && goRight) {
+                if(targetPosition.x > -7.3f && goRight) { // go right
                     targetPosition.x -= translateAmount;
                 } else {
-                    targetPosition.x += translateAmount;
+                    targetPosition.x += translateAmount; // go left
                     goRight = false;
                     if (targetPosition.x > 3.0f) {
                         goRight = true;
@@ -446,26 +464,45 @@ int main( void )
                 }
                 target.ModelMatrix = glm::translate(mat4(), targetPosition);
             }
-            
-            if ( targetPosition.x < -5.0f) {
+//            cout << " t z = " << targetPosition.z << endl;
+//            cout << ballPosition.z + 1.f << endl;
+//            cout << ballPosition.z - 1.f << endl;
+            if ( targetPosition.x < -5.0f && targetPosition.z < ballPosition.z + 1.f && targetPosition.z > ballPosition.z - 1.f) {
                 ballGo = true;
             }
             
-            if(targetPosition.x < -6.0f && goRight) {
-                
-                if (target.mScale.y < original_x_scale + 2.5f) {
-                    target.mScale.y += translateAmount;
+            if(targetPosition.x < 1.3f && targetPosition.x > -6.0f && goRight) { // In kicked position
+                cout << target.mScale.x << endl;
+                cout << "og " << original_x_scale + 1.0f << endl;
+                cout << goRight << endl;
+                if (target.mScale.x < original_x_scale + 1.0f) {
+                    target.mScale.x += translateAmount;
                 }
-                target.scaleBone(target.mScale);
             }
-            else if (targetPosition.x < -6.0f && !goRight) {
-                target.mScale.y -= translateAmount;
-                target.scaleBone(target.mScale);
+            else if (targetPosition.x < -6.0f && goRight) {
+                if (target.mScale.x > original_x_scale) {
+                    target.mScale.x -= translateAmount;
+                }
+            }
+            
+            if(targetPosition.x < -6.0f && goRight) {  // if we're going right and have hit the wall
+                if (target.mScale.y < original_y_scale + 2.0f) { // and we're scaled normally
+                    target.mScale.y += translateAmount; // scale out
+                }
+            }
+            else if (targetPosition.x < -6.0f && !goRight) { // other wise if we're going left scale back
+                if (target.mScale.y > original_y_scale) {
+                    target.mScale.y -= translateAmount;
+                }
             }
             
             if(targetPosition.x > 5.0f) {
-                target.mScale.y = original_x_scale;
+                target.mScale.y = original_y_scale;
+                target.mScale.x = original_x_scale;
             }
+            target.scaleBone(target.mScale);
+            cout << "here" << endl;
+            
         }
         
         //// End of Target stuff ! //////
@@ -476,13 +513,10 @@ int main( void )
             t = t*2;
             if(t<1) {
                 targetPosition = curve(t, a, b, c, d);
-                cout << " Curve 1" << endl;
             } else {
                 t = 2 - t;
                 targetPosition = curve(t, d, c, b, a);
-                cout << " Curve 2" << endl;
             }
-//            targetPosition = curve(t, a, b, c, d);
             target.ModelMatrix = glm::translate(mat4(), targetPosition);
             targetNotFound = true;
             targetNotFoundFinger2 = true;
@@ -491,7 +525,7 @@ int main( void )
                 a = glm::vec3(14.0f, 3.0f, 1.0f);
                 d = glm::vec3(1.0f, 10.0f, 1.0f);
                 c = glm::vec3(-6.0f, 6.0f, 6.0f);
-                b = glm::vec3(9.0f, 6.0f, 6.0f);
+                b = glm::vec3(ballPosition.x, ballPosition.y, ball.position.z);
 
             }
             
@@ -519,6 +553,7 @@ int main( void )
 	glDeleteTextures(1, &Texture);
     glDeleteTextures(1, &ballTexture);
     glDeleteTextures(1, &pitchTexture);
+    glDeleteTextures(1, &legTexture);
 	glDeleteVertexArrays(1, &VertexArrayID);
 
 	// Close OpenGL window and terminate GLFW

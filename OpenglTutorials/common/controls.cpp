@@ -34,9 +34,6 @@ float speed = 3.0f; // 3 units / second
 float mouseSpeed = 0.005f;
 
 void computeMatricesFromInputs(){
-    std::cout << position.x << " " << position.y << " " << position.z << std::endl;
-    std::cout << "Horiz = " << horizontalAngle << std::endl;
-    std::cout << "vertical = " << verticalAngle << std::endl;
     static double lastTime = glfwGetTime();
     
     // Compute time difference between current and last frame
@@ -90,6 +87,7 @@ void computeMatricesFromInputs(){
     if (glfwGetKey( window, GLFW_KEY_LEFT ) == GLFW_PRESS && glfwGetKey( window, GLFW_KEY_LEFT_SHIFT ) == GLFW_PRESS){
         position -= right * deltaTime * speed;
     }
+    
     
     float FoV = initialFoV;// - 5 * glfwGetMouseWheel(); // Now GLFW 3 requires setting up a callback for this. It's a bit too complicated for this beginner's tutorial, so it's disabled instead.
     
